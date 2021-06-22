@@ -4,7 +4,7 @@ TODO
 
 import random
 from random import Random
-from typing import Any, Tuple, FrozenSet
+from typing import Tuple, FrozenSet, Iterator
 
 
 class Outcome:
@@ -97,17 +97,36 @@ class Bin(object):
     instances: “1”, “Red”, “Odd”, “Low”, “Column 1”, “Dozen 1-12”, “Split 1-2”,
     “Split 1-4”, “Street 1-2-3”, “Corner 1-2-4-5”, “Five Bet”, “Line 1-2-3-4-5-6”,
     “00-0-1-2-3”, “Dozen 1”, “Low” and “Column 1”. These are collected into a
-    single `Bin` .
+    single `Bin`.
+
+    Attributes:
+        outcomes: A collection of `Outcome` instances.
     """
+
     outcomes: FrozenSet[Outcome]
+    # TODO?: Subclassing set might be simpler than trying to work with frozenset.
 
     def __init__(self, *outcomes: Outcome) -> None:
-        """TODO"""
+        """Create a frozenset containing all ``outcomes`` provided for this `Bin`.
+
+        Args:
+            outcomes: One or more Outcome instances to be added to this Bin.
+        """
         self.outcomes = frozenset(outcomes)
 
-    def add(self, other: Outcome) -> None:
-        """TODO"""
-        self.outcomes |= frozenset([other])
+    def add(self, *outcomes: Outcome) -> None:
+        """Add any ``outcomes`` instance(s) provided as argument(s) to this `Bin`.
+
+        Args:
+            outcomes: One or more `Outcome` instances to add to this `Bin`.
+        """
+        self.outcomes |= frozenset(outcomes)
+
+    def __iter__(self) -> Iterator:
+        return iter(self.outcomes)
+
+    def __contains__(self, item: Outcome) -> bool:
+        return item in self.outcomes
 
 
 class Wheel:
@@ -119,6 +138,7 @@ class Wheel:
         bins: A tuple containing the 38 individual `bin` instances.
         rng: A random number generator to select a `Bin` from the `bins` collection.
     """
+
     bins: Tuple[Bin, ...]
 
     def __init__(self, rng: Random = None) -> None:
@@ -143,14 +163,53 @@ class Wheel:
         Args:
             number: `Bin` ``number`` in the range zero to 37 inclusive.
             outcome: The `Outcome` to add to this `Bin`.
-
         """
-        # TODO: Check if 0 <= number <= 37
-        self.bins[number].add(outcome)
+        if 0 <= number <= 37:
+            self.bins[number].add(outcome)
+        else:
+            raise IndexError("'Number' must be between 0-37 inclusive.")
+
+    def choose(self) -> Bin:
+        """Randomly returns a `Bin` instance from the bins collection using the
+        internal Random instance, rng.
+
+        Returns:
+            A `Bin` selected at random from the wheel.
+        """
+        return self.rng.choice(self.bins)
+
+    def get(self, bin_num: int) -> Bin:
+        """Return the given `Bin` instance from the internal collection.
+
+        Args:
+            bin_num: bin number, in the range 0-37 inclusive.
+
+        Returns:
+            The requested `Bin` instance.
+        """
+        return self.bins[bin_num]
 
 
-# if __name__ == "__main__":
-#     w = Wheel()
-#     w.add_outcome(0, Outcome("0", 35))
-#     w.add_outcome(0, Outcome("0-00-1-2-3", 6))
-#     print(w.bins[0].outcomes)
+class BinBuilder:
+    """`BinBuilder` creates the `Outcome` instances for all of the 38 individual 
+    `Bin` on a Roulette wheel.
+    """
+    
+    def __init__(self) -> None:
+        """Initialises the `BinBuilder`."""
+        ...
+
+    def build_bins(self, wheel: Wheel) -> None:
+        """Creates the Outcome instances and uses the add_outcome() method to
+        place each Outcome in the appropriate Bin of wheel."""
+        ...
+
+
+
+
+if __name__ == "__main__":
+    w = Wheel()
+    w.add_outcome(0, Outcome("0", 35))
+    w.add_outcome(0, Outcome("0-00-1-2-3", 6))
+    w.add_outcome(0, Outcome("0-00-1-2-3", 6))
+    print(w.bins[0])
