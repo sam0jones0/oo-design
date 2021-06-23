@@ -4,7 +4,16 @@ TODO
 
 import random
 from random import Random
-from typing import Tuple, FrozenSet, Iterator
+from typing import (
+    Tuple,
+    FrozenSet,
+    Iterator,
+    Iterable,
+    Dict,
+    List,
+)
+
+from roulette import odds
 
 
 class Outcome:
@@ -106,19 +115,21 @@ class Bin(object):
     outcomes: FrozenSet[Outcome]
     # TODO?: Subclassing set might be simpler than trying to work with frozenset.
 
-    def __init__(self, *outcomes: Outcome) -> None:
-        """Create a frozenset containing all ``outcomes`` provided for this `Bin`.
+    def __init__(self) -> None:
+        """Create an empty `Bin` and initialise a frozenset to store added
+        `Outcomes`.
 
         Args:
             outcomes: One or more Outcome instances to be added to this Bin.
         """
-        self.outcomes = frozenset(outcomes)
+        self.outcomes = frozenset()
 
-    def add(self, *outcomes: Outcome) -> None:
-        """Add any ``outcomes`` instance(s) provided as argument(s) to this `Bin`.
+    def add(self, outcomes: Iterable[Outcome]) -> None:
+        """Adds the given `Outcomes` to this `Bin`.
 
         Args:
-            outcomes: One or more `Outcome` instances to add to this `Bin`.
+            outcomes: An iterable containing one or more `Outcome` instances to
+            add to this `Bin`.
         """
         self.outcomes |= frozenset(outcomes)
 
@@ -157,12 +168,13 @@ class Wheel:
 
         self.bins = tuple(Bin() for i in range(38))
 
-    def add_outcome(self, number: int, outcome: Outcome) -> None:
-        """Adds the given Outcome object to the Bin instance with the given number.
+    def add_outcome(self, number: int, outcome: Iterable[Outcome]) -> None:
+        """Adds the given `Outcomes` to the `Bin` instance with the given number.
 
         Args:
             number: `Bin` ``number`` in the range zero to 37 inclusive.
-            outcome: The `Outcome` to add to this `Bin`.
+            outcome: An iterable containing one or more `Outcome` instances to
+            add to this `Bin`.
         """
         if 0 <= number <= 37:
             self.bins[number].add(outcome)
@@ -191,25 +203,96 @@ class Wheel:
 
 
 class BinBuilder:
-    """`BinBuilder` creates the `Outcome` instances for all of the 38 individual 
+    """`BinBuilder` creates the `Outcome` instances for all of the 38 individual
     `Bin` on a Roulette wheel.
     """
-    
+
+    temp_bins: Dict[int, List[Outcome]]
+
     def __init__(self) -> None:
         """Initialises the `BinBuilder`."""
-        ...
+        self.temp_bins = {bin_num: list() for bin_num in range(0, 38)}
 
     def build_bins(self, wheel: Wheel) -> None:
-        """Creates the Outcome instances and uses the add_outcome() method to
-        place each Outcome in the appropriate Bin of wheel."""
+        """Creates the `Outcome` instances and uses the add_outcome() method to
+        place each `Outcome` in the appropriate `Bin` of `Wheel`."""
         ...
 
+    def gen_straight_bets(self) -> None:
+        """TODO"""
+        for n in range(1, 37):
+            outcome = Outcome(f"Number {n}", odds.STRAIGHT)
+            self.temp_bins[n].append(outcome)
+        self.temp_bins[0].append(Outcome(f"Number 0", odds.STRAIGHT))
+        self.temp_bins[37].append(Outcome(f"Number 00", odds.STRAIGHT))
+
+    def gen_split_bets(self) -> None:
+        """TODO"""
+        # Left-right split.
+        for row in range(0, 12):
+            n = row * 3 + 1
+            outcome = Outcome(f"{n}-{n+1} Split", odds.SPLIT)
+            self.temp_bins[n].append(outcome)
+            self.temp_bins[n + 1].append(outcome)
+            outcome = Outcome(f"{n+1}-{n+2} Split", odds.SPLIT)
+            self.temp_bins[n + 1].append(outcome)
+            self.temp_bins[n + 2].append(outcome)
+
+        # Up-down split.
+        for n in range(1, 34):
+            outcome = Outcome(f"{n}-{n+3} Split", odds.SPLIT)
+            self.temp_bins[n].append(outcome)
+            self.temp_bins[n + 3].append(outcome)
+
+    def gen_street_bets(self) -> None:
+        """TODO"""
+        for row in range(0, 12):
+            n = row * 3 + 1
+            outcome = Outcome(f"{n}-{n+1}-{n+2} Street", odds.STREET)
+            self.temp_bins[n].append(outcome)
+            self.temp_bins[n + 1].append(outcome)
+            self.temp_bins[n + 2].append(outcome)
+
+    def gen_corner_bets(self) -> None:
+        """TODO"""
+        for row in range(0, 11):
+            n = row * 3 + 1
+            # Left corner.
+            outcome = Outcome(f"{n}-{n+1}-{n+3}-{n+4} Corner", odds.CORNER)
+            self.temp_bins[n].append(outcome)
+            self.temp_bins[n + 1].append(outcome)
+            self.temp_bins[n + 3].append(outcome)
+            self.temp_bins[n + 4].append(outcome)
+            # Right corner.
+            outcome = Outcome(f"{n+1}-{n+2}-{n+4}-{n+5} Corner", odds.CORNER)
+            self.temp_bins[n + 1].append(outcome)
+            self.temp_bins[n + 2].append(outcome)
+            self.temp_bins[n + 4].append(outcome)
+            self.temp_bins[n + 5].append(outcome)
+
+    def gen_line_bets(self) -> None:
+        """TODO"""
+        for row in range(0, 11):
+            n = row * 3 + 1
+            outcome = Outcome(f"{n}-{n+1}-{n+2}-{n+3}-{n+4}-{n+5} Line", odds.LINE)
+            self.temp_bins[n].append(outcome)
+            self.temp_bins[n + 1].append(outcome)
+            self.temp_bins[n + 2].append(outcome)
+            self.temp_bins[n + 3].append(outcome)
+            self.temp_bins[n + 4].append(outcome)
+            self.temp_bins[n + 5].append(outcome)
+
+    def gen_dozen_bets(self) -> None:
+        """TODO"""
+        for dozen in range(0, 3):
+            outcome = Outcome(f"Dozen {dozen+1}", odds.DOZEN)
+            for n in range(0, 12):
+                self.temp_bins[dozen * 12 + n + 1].append(outcome)
 
 
-
-if __name__ == "__main__":
-    w = Wheel()
-    w.add_outcome(0, Outcome("0", 35))
-    w.add_outcome(0, Outcome("0-00-1-2-3", 6))
-    w.add_outcome(0, Outcome("0-00-1-2-3", 6))
-    print(w.bins[0])
+# if __name__ == "__main__":
+#     w = Wheel()
+#     w.add_outcome(0, Outcome("0", 35))
+#     w.add_outcome(0, Outcome("0-00-1-2-3", 6))
+#     w.add_outcome(0, Outcome("0-00-1-2-3", 6))
+#     print(w.bins[0])
