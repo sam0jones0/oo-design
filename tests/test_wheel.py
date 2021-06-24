@@ -17,8 +17,8 @@ def test_wheel():
     o1 = Outcome("foo", 1)
     o2 = Outcome("bar", 2)
     o3 = Outcome("har", 3)
-    wheel.add_outcome(8, [o1])
-    wheel.add_outcome(8, [o2, o3])
+    wheel.add_outcomes(8, [o1])
+    wheel.add_outcomes(8, [o2, o3])
     random_bin = wheel.choose()  # Will return bin 8.
     assert o1 in random_bin
     assert o1 in wheel.get(8)

@@ -13,7 +13,12 @@ from typing import (
     List,
 )
 
-from roulette import odds
+if __package__ is None or __package__ == "":
+    # Uses current directory visibility when not running as a package.
+    import odds
+else:
+    # Uses current package visibility when running as a package or with pytest.
+    from . import odds
 
 
 class Outcome:
@@ -118,9 +123,6 @@ class Bin(object):
     def __init__(self) -> None:
         """Create an empty `Bin` and initialise a frozenset to store added
         `Outcomes`.
-
-        Args:
-            outcomes: One or more Outcome instances to be added to this Bin.
         """
         self.outcomes = frozenset()
 
@@ -168,16 +170,16 @@ class Wheel:
 
         self.bins = tuple(Bin() for i in range(38))
 
-    def add_outcome(self, number: int, outcome: Iterable[Outcome]) -> None:
+    def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
         """Adds the given `Outcomes` to the `Bin` instance with the given number.
 
         Args:
             number: `Bin` ``number`` in the range zero to 37 inclusive.
-            outcome: An iterable containing one or more `Outcome` instances to
+            outcomes: An iterable containing one or more `Outcome` instances to
             add to this `Bin`.
         """
         if 0 <= number <= 37:
-            self.bins[number].add(outcome)
+            self.bins[number].add(outcomes)
         else:
             raise IndexError("'Number' must be between 0-37 inclusive.")
 
@@ -216,7 +218,18 @@ class BinBuilder:
     def build_bins(self, wheel: Wheel) -> None:
         """Creates the `Outcome` instances and uses the add_outcome() method to
         place each `Outcome` in the appropriate `Bin` of `Wheel`."""
-        ...
+        self.gen_straight_bets()
+        self.gen_split_bets()
+        self.gen_street_bets()
+        self.gen_corner_bets()
+        self.gen_line_bets()
+        self.gen_dozen_bets()
+        self.gen_column_bets()
+        self.gen_even_money_bets()
+        self.gen_five_bets()
+
+        for bin_num, outcomes in self.temp_bins.items():
+            wheel.add_outcomes(bin_num, outcomes)
 
     def gen_straight_bets(self) -> None:
         """TODO"""
@@ -289,10 +302,51 @@ class BinBuilder:
             for n in range(0, 12):
                 self.temp_bins[dozen * 12 + n + 1].append(outcome)
 
+    def gen_column_bets(self) -> None:
+        """TODO"""
+        for col in range(0, 3):
+            outcome = Outcome(f"Column {col + 1}", odds.COLUMN)
+            for row in range(0, 12):
+                self.temp_bins[row * 3 + col + 1].append(outcome)
 
-# if __name__ == "__main__":
-#     w = Wheel()
-#     w.add_outcome(0, Outcome("0", 35))
-#     w.add_outcome(0, Outcome("0-00-1-2-3", 6))
-#     w.add_outcome(0, Outcome("0-00-1-2-3", 6))
-#     print(w.bins[0])
+    def gen_even_money_bets(self):
+        """Red, black, even, odd, high, low.
+        TODO
+        """
+        red_o = Outcome("Red", odds.EVEN)
+        black_o = Outcome("Black", odds.EVEN)
+        even_o = Outcome("Even", odds.EVEN)
+        odd_o = Outcome("Odd", odds.EVEN)
+        high_o = Outcome("High", odds.EVEN)
+        low_o = Outcome("Low", odds.EVEN)
+
+        for n in range(1, 37):
+            if 1 <= n < 19:
+                self.temp_bins[n].append(low_o)
+            else:
+                self.temp_bins[n].append(high_o)
+            if n % 2 == 0:
+                self.temp_bins[n].append(even_o)
+            else:
+                self.temp_bins[n].append(odd_o)
+            if n in {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}:
+                self.temp_bins[n].append(red_o)
+            else:
+                self.temp_bins[n].append(black_o)
+
+    def gen_five_bets(self) -> None:
+        """TODO"""
+        outcome = Outcome("Five", odds.FIVE)
+        for n in [0, 37, 1, 2, 3]:
+            self.temp_bins[n].append(outcome)
+
+
+
+
+
+if __name__ == "__main__":
+    w = Wheel()
+    builder = BinBuilder()
+    builder.build_bins(w)
+    for i in range(10):
+        print("hi")
