@@ -8,7 +8,7 @@ from roulette.roulette import BinBuilder, Outcome
 
 def test_bin_builder(mock_wheel):
     """Invoke each of the various methods that create `Outcome` instances. Only
-    selected `temp_bins` collections are tested to cover most cases."""
+    selected `temp_bins` collections are tested which covers most cases."""
     wheel = mock_wheel()
     builder = BinBuilder()
     builder.build_bins(wheel)

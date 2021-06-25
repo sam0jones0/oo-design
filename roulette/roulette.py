@@ -207,6 +207,13 @@ class Wheel:
 class BinBuilder:
     """`BinBuilder` creates the `Outcome` instances for all of the 38 individual
     `Bin` on a Roulette wheel.
+
+    Each gen_* method enumerates the `Outcomes` for each type of bet.
+
+    Attributes:
+        temp_bins: Interim collection of `Outcome` instances associated with bin
+            numbers that will be used to populate the final `Bin` objects assigned
+            to the `Wheel`.
     """
 
     temp_bins: Dict[int, List[Outcome]]
@@ -216,8 +223,14 @@ class BinBuilder:
         self.temp_bins = {bin_num: list() for bin_num in range(0, 38)}
 
     def build_bins(self, wheel: Wheel) -> None:
-        """Creates the `Outcome` instances and uses the add_outcome() method to
-        place each `Outcome` in the appropriate `Bin` of `Wheel`."""
+        """Creates the `Outcome` instances associated with each type of bet and
+        uses the `Wheel`'s `add_outcome()` method to place each `Outcome` in the
+        appropriate `Bin`.
+
+        Args:
+            wheel: The `Wheel` with `Bins` that must be populated with the
+                `Outcome` instances.
+        """
         self.gen_straight_bets()
         self.gen_split_bets()
         self.gen_street_bets()
@@ -232,7 +245,6 @@ class BinBuilder:
             wheel.add_outcomes(bin_num, outcomes)
 
     def gen_straight_bets(self) -> None:
-        """TODO"""
         for n in range(1, 37):
             outcome = Outcome(f"Number {n}", odds.STRAIGHT)
             self.temp_bins[n].append(outcome)
@@ -240,7 +252,6 @@ class BinBuilder:
         self.temp_bins[37].append(Outcome(f"Number 00", odds.STRAIGHT))
 
     def gen_split_bets(self) -> None:
-        """TODO"""
         # Left-right split.
         for row in range(0, 12):
             n = row * 3 + 1
@@ -258,7 +269,6 @@ class BinBuilder:
             self.temp_bins[n + 3].append(outcome)
 
     def gen_street_bets(self) -> None:
-        """TODO"""
         for row in range(0, 12):
             n = row * 3 + 1
             outcome = Outcome(f"{n}-{n+1}-{n+2} Street", odds.STREET)
@@ -267,7 +277,6 @@ class BinBuilder:
             self.temp_bins[n + 2].append(outcome)
 
     def gen_corner_bets(self) -> None:
-        """TODO"""
         for row in range(0, 11):
             n = row * 3 + 1
             # Left corner.
@@ -284,7 +293,6 @@ class BinBuilder:
             self.temp_bins[n + 5].append(outcome)
 
     def gen_line_bets(self) -> None:
-        """TODO"""
         for row in range(0, 11):
             n = row * 3 + 1
             outcome = Outcome(f"{n}-{n+1}-{n+2}-{n+3}-{n+4}-{n+5} Line", odds.LINE)
@@ -296,23 +304,18 @@ class BinBuilder:
             self.temp_bins[n + 5].append(outcome)
 
     def gen_dozen_bets(self) -> None:
-        """TODO"""
         for dozen in range(0, 3):
             outcome = Outcome(f"Dozen {dozen+1}", odds.DOZEN)
             for n in range(0, 12):
                 self.temp_bins[dozen * 12 + n + 1].append(outcome)
 
     def gen_column_bets(self) -> None:
-        """TODO"""
         for col in range(0, 3):
             outcome = Outcome(f"Column {col + 1}", odds.COLUMN)
             for row in range(0, 12):
                 self.temp_bins[row * 3 + col + 1].append(outcome)
 
     def gen_even_money_bets(self):
-        """Red, black, even, odd, high, low.
-        TODO
-        """
         red_o = Outcome("Red", odds.EVEN)
         black_o = Outcome("Black", odds.EVEN)
         even_o = Outcome("Even", odds.EVEN)
@@ -335,7 +338,6 @@ class BinBuilder:
                 self.temp_bins[n].append(black_o)
 
     def gen_five_bets(self) -> None:
-        """TODO"""
         outcome = Outcome("Five", odds.FIVE)
         for n in [0, 37, 1, 2, 3]:
             self.temp_bins[n].append(outcome)
