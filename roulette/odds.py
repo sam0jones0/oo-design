@@ -1,4 +1,4 @@
-"""Collection of constants for the odds of each type of bet where all
+"""Collection of constants of odds for each type of bet where all
 bets pay x:1.
 
 E.g. A split bet pays at 17:1.

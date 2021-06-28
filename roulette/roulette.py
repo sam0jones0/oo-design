@@ -14,10 +14,10 @@ from typing import (
 )
 
 if __package__ is None or __package__ == "":
-    # Uses current directory visibility when not running as a package.
+    # Use current directory visibility when not running as a package.
     import odds
 else:
-    # Uses current package visibility when running as a package or with pytest.
+    # Use current package visibility when running as a package or with pytest.
     from . import odds
 
 
@@ -41,13 +41,13 @@ class Outcome:
     """
 
     def __init__(self, name: str, odds: int) -> None:
-        """Sets the instance `name` and `odds` from the parameter `name` and
+        """Set the instance `name` and `odds` from the parameter `name` and
         `odds`.
         """
         self.name = name
         self.odds = odds
 
-    def win_amount(self, amount: float) -> float:
+    def win_amount(self, amount: int) -> int:
         """Multiply this `Outcome`'s odds by the given ``amount``. The product is
         returned.
 
@@ -102,7 +102,7 @@ class Outcome:
         )
 
 
-class Bin(object):
+class Bin:
     """`Bin` contains a collection of `Outcome` instances which reflect the winning
     bets that are paid for a particular bin on a Roulette wheel.
 
@@ -114,11 +114,10 @@ class Bin(object):
     single `Bin`.
 
     Attributes:
-        outcomes: A collection of `Outcome` instances.
+        outcomes: A collection of `Outcome` instances in this `Bin`.
     """
 
     outcomes: FrozenSet[Outcome]
-    # TODO?: Subclassing set might be simpler than trying to work with frozenset.
 
     def __init__(self) -> None:
         """Create an empty `Bin` and initialise a frozenset to store added
@@ -127,7 +126,7 @@ class Bin(object):
         self.outcomes = frozenset()
 
     def add(self, outcomes: Iterable[Outcome]) -> None:
-        """Adds the given `Outcomes` to this `Bin`.
+        """Add the given `Outcomes` to this `Bin`.
 
         Args:
             outcomes: An iterable containing one or more `Outcome` instances to
@@ -143,20 +142,22 @@ class Bin(object):
 
 
 class Wheel:
-    """Wheel contains the 38 individual bins on a Roulette wheel, plus a random
-    number generator. It can select a `Bin` at random, simulating a spin of the
-    Roulette wheel.
+    """Wheel contains the 38 individual bins on a Roulette wheel, a random
+    number generator and a collection of all possible outcomes. It can select a
+    `Bin` at random, simulating a spin of the Roulette wheel.
 
     Attributes:
         bins: A tuple containing the 38 individual `bin` instances.
         rng: A random number generator to select a `Bin` from the `bins` collection.
+        all_outcomes: A dict containing all possible outcomes.
     """
 
     bins: Tuple[Bin, ...]
+    all_outcomes: Dict[str, Outcome]
 
     def __init__(self, rng: Random = None) -> None:
-        """Creates a new wheel with 38 empty `Bin` instances. Also creates a
-        new random number generator instance.
+        """Create a new wheel with 38 empty `Bin` instances, a new random number
+         generator instance and a dict to store all possible outcomes.
         TODO: Full initialization of the Bin instances.
 
         Args:
@@ -169,22 +170,29 @@ class Wheel:
             self.rng = rng
 
         self.bins = tuple(Bin() for i in range(38))
+        self.all_outcomes = dict()
 
     def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
-        """Adds the given `Outcomes` to the `Bin` instance with the given number.
+        """Add the given `Outcomes` to the `Bin` instance with the given number
+        and update the internal collection of all_outcomes.
 
         Args:
             number: `Bin` ``number`` in the range zero to 37 inclusive.
             outcomes: An iterable containing one or more `Outcome` instances to
             add to this `Bin`.
+
+        Raises:
+            IndexError: Invalid bin number.
         """
         if 0 <= number <= 37:
             self.bins[number].add(outcomes)
+            for outcome in outcomes:
+                self.all_outcomes.update({outcome.name: outcome})
         else:
             raise IndexError("'Number' must be between 0-37 inclusive.")
 
     def choose(self) -> Bin:
-        """Randomly returns a `Bin` instance from the bins collection using the
+        """Randomly return a `Bin` instance from the bins collection using the
         internal Random instance, rng.
 
         Returns:
@@ -192,7 +200,7 @@ class Wheel:
         """
         return self.rng.choice(self.bins)
 
-    def get(self, bin_num: int) -> Bin:
+    def get_bin(self, bin_num: int) -> Bin:
         """Return the given `Bin` instance from the internal collection.
 
         Args:
@@ -202,6 +210,24 @@ class Wheel:
             The requested `Bin` instance.
         """
         return self.bins[bin_num]
+
+    def get_outcome(self, name: str) -> Outcome:
+        """Return an `Outcome` instance given the string ``name`` of the `Outcome`
+        from an internal collection of all_outcomes.
+
+        Args:
+            name: The name of an `Outcome`
+
+        Returns:
+            The requested `Outcome` instance.
+
+        Raises:
+            KeyError: There is no `Outcome` with name: ``name``.
+        """
+        outcome = self.all_outcomes.get(name)
+        if outcome is None:
+            raise KeyError(f"No Outcome with name: {name}")
+        return outcome
 
 
 class BinBuilder:
@@ -219,12 +245,12 @@ class BinBuilder:
     temp_bins: Dict[int, List[Outcome]]
 
     def __init__(self) -> None:
-        """Initialises the `BinBuilder`."""
+        """Initialise the `BinBuilder`."""
         self.temp_bins = {bin_num: list() for bin_num in range(0, 38)}
 
     def build_bins(self, wheel: Wheel) -> None:
-        """Creates the `Outcome` instances associated with each type of bet and
-        uses the `Wheel`'s `add_outcome()` method to place each `Outcome` in the
+        """Create the `Outcome` instances associated with each type of bet and
+        use the `Wheel`'s `add_outcome()` method to place each `Outcome` in the
         appropriate `Bin`.
 
         Args:
@@ -248,8 +274,8 @@ class BinBuilder:
         for n in range(1, 37):
             outcome = Outcome(f"Number {n}", odds.STRAIGHT)
             self.temp_bins[n].append(outcome)
-        self.temp_bins[0].append(Outcome(f"Number 0", odds.STRAIGHT))
-        self.temp_bins[37].append(Outcome(f"Number 00", odds.STRAIGHT))
+        self.temp_bins[0].append(Outcome("Number 0", odds.STRAIGHT))
+        self.temp_bins[37].append(Outcome("Number 00", odds.STRAIGHT))
 
     def gen_split_bets(self) -> None:
         # Left-right split.
@@ -343,7 +369,35 @@ class BinBuilder:
             self.temp_bins[n].append(outcome)
 
 
+class Bet:
+    """A `Bet` on a specific `Outcome`.
 
+    Maintains an association between an amount wagered, an `Outcome` object, and
+    the specific `Player` who made the `Bet`.
+
+    Attributes:
+        amount: The amount of the bet.
+        outcome: The `Outcome` we're betting on.
+    """
+
+    def __init__(self, amount: int, outcome: Outcome) -> None:
+        """Create a new `Bet` of a specific ``amount`` on a specific ``outcome``."""
+        self.amount = amount
+        self.outcome = outcome
+
+    def win_amount(self) -> int:
+        """Return total winnings for this `Bet`, including initial bet `amount`."""
+        return self.outcome.win_amount(self.amount) + self.amount
+
+    def lose_amount(self) -> int:
+        """Return the amount lost on this `Bet`."""
+        return self.amount
+
+    def __str__(self) -> str:
+        return f"{self.amount} on {self.outcome}"
+
+    def __repr__(self) -> str:
+        return f"{self.__class__.__name__}(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
 
 
 if __name__ == "__main__":
