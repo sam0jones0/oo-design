@@ -41,15 +41,15 @@ class Outcome:
     """
 
     def __init__(self, name: str, odds: int) -> None:
-        """Set the instance `name` and `odds` from the parameter `name` and
+        """Sets the instance `name` and `odds` from the parameter `name` and
         `odds`.
         """
         self.name = name
         self.odds = odds
 
     def win_amount(self, amount: int) -> int:
-        """Multiply this `Outcome`'s odds by the given ``amount``. The product is
-        returned.
+        """Multiplies this `Outcome`'s odds by the given ``amount`` and returns
+        the product.
 
         Args:
             amount: The amount being bet.
@@ -60,7 +60,7 @@ class Outcome:
         return self.odds * amount
 
     def __eq__(self, other: object) -> bool:
-        """Compare the `name` attributes of `self` and ``other``.
+        """Compares the `name` attributes of `self` and ``other``.
 
         Args:
             other: Another `Outcome` to compare against.
@@ -73,7 +73,7 @@ class Outcome:
         return self.name == other.name
 
     def __ne__(self, other: object) -> bool:
-        """Compare the `name` attributes of `self` and ``other``.
+        """Compares the `name` attributes of `self` and ``other``.
 
         Args:
             other: Another `Outcome` to compare against.
@@ -120,13 +120,13 @@ class Bin:
     outcomes: FrozenSet[Outcome]
 
     def __init__(self) -> None:
-        """Create an empty `Bin` and initialise a frozenset to store added
+        """Creates an empty `Bin` and initialise a frozenset to store added
         `Outcomes`.
         """
         self.outcomes = frozenset()
 
     def add(self, outcomes: Iterable[Outcome]) -> None:
-        """Add the given `Outcomes` to this `Bin`.
+        """Adds the given `Outcomes` to this `Bin`.
 
         Args:
             outcomes: An iterable containing one or more `Outcome` instances to
@@ -156,7 +156,7 @@ class Wheel:
     all_outcomes: Dict[str, Outcome]
 
     def __init__(self, rng: Random = None) -> None:
-        """Create a new wheel with 38 empty `Bin` instances, a new random number
+        """Creates a new wheel with 38 empty `Bin` instances, a new random number
          generator instance and a dict to store all possible outcomes.
         TODO: Full initialization of the Bin instances.
 
@@ -173,7 +173,7 @@ class Wheel:
         self.all_outcomes = dict()
 
     def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
-        """Add the given `Outcomes` to the `Bin` instance with the given number
+        """Adds the given `Outcomes` to the `Bin` instance with the given number
         and update the internal collection of all_outcomes.
 
         Args:
@@ -186,13 +186,12 @@ class Wheel:
         """
         if 0 <= number <= 37:
             self.bins[number].add(outcomes)
-            for outcome in outcomes:
-                self.all_outcomes.update({outcome.name: outcome})
+            self.all_outcomes.update({outcome.name: outcome for outcome in outcomes})
         else:
             raise IndexError("'Number' must be between 0-37 inclusive.")
 
     def choose(self) -> Bin:
-        """Randomly return a `Bin` instance from the bins collection using the
+        """Randomly returns a `Bin` instance from the bins collection using the
         internal Random instance, rng.
 
         Returns:
@@ -201,7 +200,7 @@ class Wheel:
         return self.rng.choice(self.bins)
 
     def get_bin(self, bin_num: int) -> Bin:
-        """Return the given `Bin` instance from the internal collection.
+        """Returns the given `Bin` instance from the internal collection.
 
         Args:
             bin_num: bin number, in the range 0-37 inclusive.
@@ -212,7 +211,7 @@ class Wheel:
         return self.bins[bin_num]
 
     def get_outcome(self, name: str) -> Outcome:
-        """Return an `Outcome` instance given the string ``name`` of the `Outcome`
+        """Returns an `Outcome` instance given the string ``name`` of the `Outcome`
         from an internal collection of all_outcomes.
 
         Args:
@@ -232,7 +231,7 @@ class Wheel:
 
 class BinBuilder:
     """`BinBuilder` creates the `Outcome` instances for all of the 38 individual
-    `Bin` on a Roulette wheel.
+    `Bin`s on a Roulette wheel.
 
     Each gen_* method enumerates the `Outcomes` for each type of bet.
 
@@ -249,7 +248,7 @@ class BinBuilder:
         self.temp_bins = {bin_num: list() for bin_num in range(0, 38)}
 
     def build_bins(self, wheel: Wheel) -> None:
-        """Create the `Outcome` instances associated with each type of bet and
+        """Creates the `Outcome` instances associated with each type of bet and
         use the `Wheel`'s `add_outcome()` method to place each `Outcome` in the
         appropriate `Bin`.
 
@@ -375,22 +374,29 @@ class Bet:
     Maintains an association between an amount wagered, an `Outcome` object, and
     the specific `Player` who made the `Bet`.
 
+    TODO: We can’t allow a player to bet more than their stake; therefore, we
+        should deduct the payment as the Bet instance is created. A consequence
+        of this is a change to our definition of the Bet class. We don’t need to
+        compute the amount that is lost. We’re not going to deduct the money
+        when the bet resolved, we’re going to deduct the money from the Player
+        object’s stake as part of creating the Bet instance.
+
     Attributes:
         amount: The amount of the bet.
         outcome: The `Outcome` we're betting on.
     """
 
     def __init__(self, amount: int, outcome: Outcome) -> None:
-        """Create a new `Bet` of a specific ``amount`` on a specific ``outcome``."""
+        """Creates a new `Bet` of a specific ``amount`` on a specific ``outcome``."""
         self.amount = amount
         self.outcome = outcome
 
     def win_amount(self) -> int:
-        """Return total winnings for this `Bet`, including initial bet `amount`."""
+        """Returns total winnings for this `Bet`, including initial bet `amount`."""
         return self.outcome.win_amount(self.amount) + self.amount
 
     def lose_amount(self) -> int:
-        """Return the amount lost on this `Bet`."""
+        """Returns the amount lost on this `Bet`."""
         return self.amount
 
     def __str__(self) -> str:
@@ -398,6 +404,89 @@ class Bet:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
+
+
+class InvalidBet(Exception):
+    """Raised when a `Player` instances attempts to place a bet outside the
+    minimum/maximum limits.
+    """
+
+    pass
+
+
+class Table:
+    """`Table` contains all the `Bet` instances created by a `Player` object.
+    A table also has a betting limit, and the sum of all a player's bets must be
+    less than or equal to this limit. We assume a single `Player` object in the
+    simulation.
+
+    Attributes:
+        limit: This is the table limit. The sum of the bets from a `Player` object
+            must be less than or equal to this limit.
+        minimum: This is the table minimum. Each individual bet from a `Player`
+            object must be greater than this limit.
+        bets: This is a list of the `Bet` instances currently active. These will
+            result in either wins or losses to the `Player` object.
+    """
+
+    bets: List[Bet]
+    limit: int
+    minimum: int
+
+    def __init__(self, *bets: Bet) -> None:
+        """Creates an empty list of bets."""
+        if bets is None:
+            self.bets = []
+        else:
+            self.bets = list(bets)
+
+        self.limit = 300
+        self.minimum = 10
+
+    def place_bet(self, bet: Bet) -> None:
+        """Adds this ``bet`` to the list of active `bets`.
+
+        Args:
+            bet: A `Bet` instances to be added to the table.
+
+        Raises:
+            InvalidBet: Placing this ``bet`` breaks the table minimum/limit rules.
+        """
+        if (
+            self.minimum <= bet.amount <= self.limit
+            and sum(b.amount for b in self.bets) + bet.amount <= self.limit
+        ):
+            self.bets.append(bet)
+        else:
+            raise InvalidBet("Placing this bet violates table min/limit rules.")
+
+    def is_valid(self):
+        """Applies the table-limit rules that each bet is at least `self.minimum`
+        and the sum of all bets is no greater than `self.limit`.
+
+        Raises:
+            InvalidBet: The bets don't pass the table minimum/limit rules.
+        """
+        total_amount = 0
+        for bet in self.bets:
+            total_amount += bet.amount
+            if not (
+                self.minimum <= bet.amount <= self.limit and total_amount <= self.limit
+            ):
+                raise InvalidBet("Active bets violate the table min/limit rules.")
+        return True
+
+    def __iter__(self) -> Iterator[Bet]:
+        """Returns an iterator over the available `Bet` instances."""
+        # Note that we need to be able remove bets from the table. Consequently,
+        # we have to update the list, which requires that we create a copy of the list.
+        return iter(self.bets[:])
+
+    def __str__(self):
+        return ", ".join(str(bet) for bet in self.bets)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
 if __name__ == "__main__":
