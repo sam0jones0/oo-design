@@ -8,27 +8,33 @@ import random
 from roulette.roulette import Outcome, Wheel
 
 
-def test_wheel():
-    """TODO"""
-    rng = random.Random()
-    # First randint(0, 37) with seed of 1 will return 8.
-    rng.seed(1)
-    wheel = Wheel(rng=rng)
-
-    o1 = Outcome("foo", 1)
-    o2 = Outcome("bar", 2)
-    o3 = Outcome("har", 3)
-
+def test_add(sample_outcomes):
+    o1, o2, o3 = sample_outcomes
+    wheel = Wheel()
     wheel.add_outcomes(8, [o1])
     wheel.add_outcomes(8, [o2, o3])
-    random_bin = wheel.choose()  # Will return bin 8.
-
-    assert o1 in random_bin
-    assert o1 in wheel.get_bin(8)
-    assert o2 in random_bin
-    assert o3 in wheel.get_bin(8)
 
     assert len(wheel.all_outcomes) == 3
+
+
+def test_choose(seeded_wheel, sample_outcomes):
+    o1, o2, o3 = sample_outcomes
+    wheel = seeded_wheel
+    wheel.add_outcomes(8, sample_outcomes)
+    # First randint(0, 37) of seeded_wheel will return 8.
+    random_bin = wheel.choose()
+
+    assert o1 in random_bin
+    assert o2 in random_bin
+    assert o3 in random_bin
+    assert o1 in wheel.get_bin(8)
+    assert o2 in wheel.get_bin(8)
+    assert o3 in wheel.get_bin(8)
+
+
+def test_get(wheel_with_outcomes, sample_outcomes):
+    o1, o2, o3 = sample_outcomes
+    wheel = wheel_with_outcomes
 
     assert wheel.get_outcome(o1.name) is o1
     assert wheel.get_outcome(o2.name) is o2

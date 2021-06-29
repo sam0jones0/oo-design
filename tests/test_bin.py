@@ -24,3 +24,6 @@ def test_bin_construction():
     assert isinstance(zero_zero, Bin)
     assert isinstance(zero_zero.outcomes, frozenset)
 
+    bin_iter = iter(zero)
+    assert isinstance(next(bin_iter), Outcome)
+

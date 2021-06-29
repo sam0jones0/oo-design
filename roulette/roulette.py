@@ -460,9 +460,12 @@ class Table:
         else:
             raise InvalidBet("Placing this bet violates table min/limit rules.")
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         """Applies the table-limit rules that each bet is at least `self.minimum`
         and the sum of all bets is no greater than `self.limit`.
+
+        Returns:
+            True, if `Table` state is valid.
 
         Raises:
             InvalidBet: The bets don't pass the table minimum/limit rules.
@@ -482,10 +485,10 @@ class Table:
         # we have to update the list, which requires that we create a copy of the list.
         return iter(self.bets[:])
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ", ".join(str(bet) for bet in self.bets)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
