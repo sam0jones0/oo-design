@@ -5,7 +5,7 @@ TODO
 import pytest
 import random
 
-from roulette.roulette import Outcome, Wheel
+from roulette.roulette import Wheel
 
 
 def test_add(sample_outcomes):

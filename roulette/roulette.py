@@ -186,7 +186,9 @@ class Wheel:
         """
         if 0 <= number <= 37:
             self.bins[number].add(outcomes)
-            self.all_outcomes.update({outcome.name: outcome for outcome in outcomes})
+            self.all_outcomes.update(
+                {outcome.name.lower(): outcome for outcome in outcomes}
+            )
         else:
             raise IndexError("'Number' must be between 0-37 inclusive.")
 
@@ -223,7 +225,7 @@ class Wheel:
         Raises:
             KeyError: There is no `Outcome` with name: ``name``.
         """
-        outcome = self.all_outcomes.get(name)
+        outcome = self.all_outcomes.get(name.lower())
         if outcome is None:
             raise KeyError(f"No Outcome with name: {name}")
         return outcome
@@ -381,6 +383,8 @@ class Bet:
         when the bet resolved, we’re going to deduct the money from the Player
         object’s stake as part of creating the Bet instance.
 
+    TODO: Associate with the specific `Player` making the `Bet`.
+
     Attributes:
         amount: The amount of the bet.
         outcome: The `Outcome` we're betting on.
@@ -427,11 +431,13 @@ class Table:
             object must be greater than this limit.
         bets: This is a list of the `Bet` instances currently active. These will
             result in either wins or losses to the `Player` object.
+        bets_total: A running total of all `Bet`'s amounts in play.
     """
 
     bets: List[Bet]
     limit: int
     minimum: int
+    bets_total: int
 
     def __init__(self, *bets: Bet) -> None:
         """Creates an empty list of bets."""
@@ -442,9 +448,11 @@ class Table:
 
         self.limit = 300
         self.minimum = 10
+        self.bets_total = 0
 
     def place_bet(self, bet: Bet) -> None:
-        """Adds this ``bet`` to the list of active `bets`.
+        """Adds this ``bet`` to the list of active `bets` after checking if placing
+        this bet does not violate the table minimum bet/limit rules.
 
         Args:
             bet: A `Bet` instances to be added to the table.
@@ -454,15 +462,17 @@ class Table:
         """
         if (
             self.minimum <= bet.amount <= self.limit
-            and sum(b.amount for b in self.bets) + bet.amount <= self.limit
+            and self.bets_total + bet.amount <= self.limit
         ):
             self.bets.append(bet)
+            self.bets_total += bet.amount
         else:
             raise InvalidBet("Placing this bet violates table min/limit rules.")
 
     def is_valid(self) -> bool:
-        """Applies the table-limit rules that each bet is at least `self.minimum`
-        and the sum of all bets is no greater than `self.limit`.
+        """Confirms the table-limit rules have been adhered to such that each
+        bet is at least `self.minimum` and the sum of all bets is no greater
+        than `self.limit`.
 
         Returns:
             True, if `Table` state is valid.
@@ -479,6 +489,12 @@ class Table:
                 raise InvalidBet("Active bets violate the table min/limit rules.")
         return True
 
+    def clear(self) -> None:
+        """Clears the table of all `Bet` instances, to be called once `Game` has resolved
+        all `Bet`'s."""
+        self.bets = []
+        self.bets_total = 0
+
     def __iter__(self) -> Iterator[Bet]:
         """Returns an iterator over the available `Bet` instances."""
         # Note that we need to be able remove bets from the table. Consequently,
@@ -490,6 +506,73 @@ class Table:
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
+
+
+class Passenger57:
+    """Temporary `Player`. Constructs a `Bet` instance based on the `Outcome`
+    object named 'Black'.
+
+    Attributes:
+        table: The `Table` that is used to place individual `Bet` instances.
+        wheel: The `Wheel` instance which defines all `Outcome` instances.
+        black: The `Outcome` on which this player focuses their betting.
+    """
+
+    def __init__(self, table: Table, wheel: Wheel) -> None:
+        """Constructs the `Player` instance with a specific `Table` and `Wheel
+        for creating and resolving bets. Also creates the 'black' `Outcome` for
+        use in creating bets.
+        """
+        self.table = table
+        self.wheel = wheel
+        self.black = wheel.get_outcome("black")
+
+    def place_bets(self) -> None:
+        """Create an place a `Bet` on the 'Black' `Outcome` instance."""
+        self.table.place_bet(Bet(10, self.black))
+        # player.pot -= ~bet.amount~
+
+    def win(self, bet: Bet) -> None:
+        """Notification from the `Game` object that the `Bet` instance was a winner."""
+        # player.pot += bet.win_amount()
+        ...
+
+    def lose(self, bet: Bet) -> None:
+        """Notification from the `Game` object that the `Bet` instances was a loser."""
+        ...
+
+
+class Game:
+    """`Game` manages the sequence of actions that defines the game of Roulette.
+
+    This includes notifying the `Player` object to place bets, spinning the
+    `Wheel` object and resolving the `Bet` instances actually present on the
+    `Table` object.
+
+    Attributes:
+        wheel: The `Wheel` instance which produces random events.
+        table: The `Table` instance which holds bets to be resolved.
+    """
+
+    def __init__(self, table: Table, wheel: Wheel) -> None:
+        self.wheel = wheel
+        self.table = table
+
+    def cycle(self, player: Passenger57):  # TODO: `Player` type hint missing/wrong.
+        """Execute a single cycle of play with a given `Player`.
+
+        Args:
+            player: The individual `Player` that places bets, receives winnings
+            and pays losses.
+        """
+        player.place_bets()
+        winning_bin = self.wheel.choose()
+        for bet in self.table:
+            if bet.outcome in winning_bin:
+                player.win(bet)
+            else:
+                player.lose(bet)
+        self.table.clear()
 
 
 if __name__ == "__main__":

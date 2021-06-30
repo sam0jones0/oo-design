@@ -6,6 +6,8 @@ import pytest
 
 from roulette.roulette import Bet, Table, InvalidBet
 
+# TODO: Test bets_total counter.
+
 
 def test_empty_init():
     t = Table()
