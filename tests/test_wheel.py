@@ -8,8 +8,11 @@ import random
 from roulette.roulette import Wheel
 
 
-def test_add(sample_outcomes):
-    o1, o2, o3 = sample_outcomes
+# TODO: Mock rng instead of take rng as arg to Wheel.
+
+
+def test_add(mock_outcomes):
+    o1, o2, o3 = mock_outcomes
     wheel = Wheel()
     wheel.add_outcomes(8, [o1])
     wheel.add_outcomes(8, [o2, o3])
@@ -17,10 +20,10 @@ def test_add(sample_outcomes):
     assert len(wheel.all_outcomes) == 3
 
 
-def test_choose(seeded_wheel, sample_outcomes):
-    o1, o2, o3 = sample_outcomes
+def test_choose(seeded_wheel, mock_outcomes):
+    o1, o2, o3 = mock_outcomes
     wheel = seeded_wheel
-    wheel.add_outcomes(8, sample_outcomes)
+    wheel.add_outcomes(8, mock_outcomes)
     # First randint(0, 37) of seeded_wheel will return 8.
     random_bin = wheel.choose()
 
@@ -32,8 +35,8 @@ def test_choose(seeded_wheel, sample_outcomes):
     assert o3 in wheel.get_bin(8)
 
 
-def test_get(wheel_with_outcomes, sample_outcomes):
-    o1, o2, o3 = sample_outcomes
+def test_get(wheel_with_outcomes, mock_outcomes):
+    o1, o2, o3 = mock_outcomes
     wheel = wheel_with_outcomes
 
     assert wheel.get_outcome(o1.name) is o1

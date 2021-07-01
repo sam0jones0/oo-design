@@ -155,22 +155,14 @@ class Wheel:
     bins: Tuple[Bin, ...]
     all_outcomes: Dict[str, Outcome]
 
-    def __init__(self, rng: Random = None) -> None:
+    def __init__(self) -> None:
         """Creates a new wheel with 38 empty `Bin` instances, a new random number
          generator instance and a dict to store all possible outcomes.
         TODO: Full initialization of the Bin instances.
-
-        Args:
-            rng: Optional; Provide a seeded `Random` instance for use in testing.
         """
-        if rng is None:
-            self.rng = random.Random()
-        else:
-            # Use seeded Random for testing.
-            self.rng = rng
-
         self.bins = tuple(Bin() for i in range(38))
         self.all_outcomes = dict()
+        self.rng = random.Random()
 
     def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
         """Adds the given `Outcomes` to the `Bin` instance with the given number

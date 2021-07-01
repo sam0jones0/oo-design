@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from roulette.roulette import Bet, Table, InvalidBet
+from roulette.roulette import Table, InvalidBet
 
 # TODO: Test bets_total counter.
 
@@ -48,7 +48,7 @@ def test_is_valid(sample_bets):
 def test_iter(sample_bets):
     t = Table(*sample_bets)
     t_iter = iter(t)
-    assert isinstance(next(t_iter), Bet)
+    assert isinstance(next(t_iter), type(sample_bets[0]))
 
 
 def test_str_repr(sample_bets):
