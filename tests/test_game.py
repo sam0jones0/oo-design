@@ -4,11 +4,11 @@ TODO
 
 import pytest
 
-from roulette.roulette import BinBuilder, Game, Wheel, Passenger57, Table
+from roulette.roulette import BinBuilder, Game, Passenger57, Table
 
 
-def test_game():
-    wheel = Wheel()
+def test_game(mock_wheel):
+    wheel = mock_wheel()
     BinBuilder().build_bins(wheel)
     table = Table()
     player = Passenger57(table, wheel)
@@ -17,3 +17,4 @@ def test_game():
         game.cycle(player)
 
     assert game.table.bets == []
+

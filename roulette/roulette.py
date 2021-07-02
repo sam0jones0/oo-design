@@ -433,14 +433,15 @@ class Table:
 
     def __init__(self, *bets: Bet) -> None:
         """Creates an empty list of bets."""
-        if bets is None:
-            self.bets = []
-        else:
-            self.bets = list(bets)
-
+        self.bets = []
+        self.bets_total = 0
         self.limit = 300
         self.minimum = 10
-        self.bets_total = 0
+        self.wheel = Wheel()
+
+        if bets is not None:
+            for bet in bets:
+                self.place_bet(bet)
 
     def place_bet(self, bet: Bet) -> None:
         """Adds this ``bet`` to the list of active `bets` after checking if placing
@@ -461,7 +462,7 @@ class Table:
         else:
             raise InvalidBet("Placing this bet violates table min/limit rules.")
 
-    def is_valid(self) -> bool:
+    def validate(self) -> bool:
         """Confirms the table-limit rules have been adhered to such that each
         bet is at least `self.minimum` and the sum of all bets is no greater
         than `self.limit`.
@@ -558,6 +559,7 @@ class Game:
             and pays losses.
         """
         player.place_bets()
+        self.table.validate()
         winning_bin = self.wheel.choose()
         for bet in self.table:
             if bet.outcome in winning_bin:

@@ -3,8 +3,23 @@
 import pytest
 import random
 
-import roulette.roulette
+import roulette
 from roulette.roulette import BinBuilder, Wheel
+
+
+# Hack for broader scope monkeypatch:
+@pytest.fixture(scope="module")
+def monkey_module(request):
+    from _pytest.monkeypatch import MonkeyPatch
+
+    m_patch = MonkeyPatch()
+    yield m_patch
+    m_patch.undo()
+
+
+@pytest.fixture(scope="module")
+def patched_wheel(monkey_module):
+    monkey_module.setattr(roulette.roulette, "Wheel", MockWheel)
 
 
 class MockWheel:
@@ -13,6 +28,12 @@ class MockWheel:
     @staticmethod
     def add_outcomes(*args, **kwargs):
         return None
+
+    def get_outcome(self, name):
+        return MockOutcome("Black", 1)
+
+    def choose(self):
+        return tuple("bin_1")
 
 
 @pytest.fixture(scope="module")
@@ -39,17 +60,13 @@ def wheel_with_outcomes(mock_outcomes):
 
 
 @pytest.fixture(scope="module")
-def built_builder(mock_wheel):
-    wheel = MockWheel()
+def patched_builder(monkey_module, patched_wheel):
+    monkey_module.setattr(roulette.roulette, "Outcome", MockOutcome)
+    wheel = Wheel()
     builder = BinBuilder()
-    old_outcome = roulette.roulette.Outcome
-    # Not sure if this is a good idea.
-    roulette.roulette.Outcome = MockOutcome
-    # Builder's bins are built using MockOutcome.
     builder.build_bins(wheel)  # Type: ignore
-    yield builder
-    # Hopefully this undoes it properly.
-    roulette.roulette.Outcome = old_outcome
+
+    return builder
 
 
 class MockOutcome:
@@ -104,12 +121,3 @@ def invalid_bets():
         MockBet(-1, MockOutcome("4-1 Split", 4)),
         MockBet(1000, MockOutcome("Column 1", 6)),
     ]
-
-
-# Unused hack for broader scope monkeypatch:
-    # @pytest.fixture(scope="session")
-    # def monkey_session(request):
-    #     from _pytest.monkeypatch import MonkeyPatch
-    #     m_patch = MonkeyPatch()
-    #     yield m_patch
-    #     m_patch.undo()
