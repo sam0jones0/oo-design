@@ -391,10 +391,6 @@ class Bet:
         """Returns total winnings for this `Bet`, including initial bet `amount`."""
         return self.outcome.win_amount(self.amount) + self.amount
 
-    def lose_amount(self) -> int:
-        """Returns the amount lost on this `Bet`."""
-        return self.amount
-
     def __str__(self) -> str:
         return f"{self.amount} on {self.outcome}"
 
@@ -501,38 +497,80 @@ class Table:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
-class Passenger57:
+class Player:
+    """`Player` places bets in Roulette.
+
+    This is an abstract class, with no body for the `Player.place_bets()` method.
+    However, this class does implement the basic `Player.win()` method used by
+    all subclasses.
+
+    Attributes:
+        stake: The player's current stake. Initialised to the player's starting budget.
+        rounds_to_go: Number of rounds left to play. Initialised by the overall
+            simulation control to the maximum number of rounds to play.
+        table: The `Table` object used to place individual `Bet` instances. The
+            `Table` object contains the `Wheel` object from which the player can
+            get `Outcome` objects used to build `Bet` instances.
+    """
+
+    def __init__(self, table: Table) -> None:
+        """Constructs the `Player` instance with a specific `Table` object for
+        placing `Bet` instances.
+        """
+        self.stake = 1000
+        self.rounds_to_go = 20
+        self.table = table
+
+    def place_bets(self) -> None:
+        """Must be overridden in subclass as each `Player` will have different
+        betting strategy.
+        """
+        raise NotImplementedError
+
+    def playing(self) -> bool:
+        """Returns ``True`` while the player is still active."""
+        if self.stake >= table.minimum and self.rounds_to_go > 0:
+            return True
+        return False
+
+    def win(self, bet: Bet) -> None:
+        """Notification from the `Game` object that the `Bet` instance was a
+        winner. Increases `Player.stake` accordingly.
+
+        Args:
+              bet: The `Bet` which won.
+        """
+        self.stake += bet.win_amount()
+
+    def lose(self, bet: Bet) -> None:
+        """Notification from the `Game` object that the `Bet` instance was a loser."""
+        ...
+
+
+class Passenger57(Player):
     """Temporary `Player`. Constructs a `Bet` instance based on the `Outcome`
     object named 'Black'.
 
     Attributes:
         table: The `Table` that is used to place individual `Bet` instances.
-        wheel: The `Wheel` instance which defines all `Outcome` instances.
         black: The `Outcome` on which this player focuses their betting.
+        TODO: Inherit or duplicate docstring?
     """
 
-    def __init__(self, table: Table, wheel: Wheel) -> None:
+    def __init__(self, table) -> None:
         """Constructs the `Player` instance with a specific `Table` and `Wheel
         for creating and resolving bets. Also creates the 'black' `Outcome` for
         use in creating bets.
         """
-        self.table = table
-        self.wheel = wheel
-        self.black = wheel.get_outcome("black")
+        super().__init__(table)
+        self.black = table.wheel.get_outcome("black")
 
     def place_bets(self) -> None:
-        """Create an place a `Bet` on the 'Black' `Outcome` instance."""
-        self.table.place_bet(Bet(10, self.black))
-        # player.pot -= ~bet.amount~
-
-    def win(self, bet: Bet) -> None:
-        """Notification from the `Game` object that the `Bet` instance was a winner."""
-        # player.pot += bet.win_amount()
-        ...
-
-    def lose(self, bet: Bet) -> None:
-        """Notification from the `Game` object that the `Bet` instances was a loser."""
-        ...
+        """Create and place a `Bet` on the 'Black' `Outcome` instance."""
+        if self.stake >= self.table.limit:
+            current_bet = Bet(10, self.black)
+            self.table.place_bet(current_bet)
+            self.stake -= current_bet.amount
 
 
 class Game:
@@ -570,8 +608,10 @@ class Game:
 
 
 if __name__ == "__main__":
-    w = Wheel()
+    table = Table()
     builder = BinBuilder()
-    builder.build_bins(w)
+    builder.build_bins(table.wheel)
+    p = Passenger57(table)
+    p.playing()
     for i in range(10):
         print("hi")
