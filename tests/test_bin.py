@@ -26,4 +26,3 @@ def test_bin_construction():
 
     bin_iter = iter(zero)
     assert isinstance(next(bin_iter), Outcome)
-

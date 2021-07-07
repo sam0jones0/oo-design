@@ -3,7 +3,6 @@ TODO
 """
 
 import random
-from random import Random
 from typing import (
     Tuple,
     FrozenSet,
@@ -368,13 +367,6 @@ class Bet:
     Maintains an association between an amount wagered, an `Outcome` object, and
     the specific `Player` who made the `Bet`.
 
-    TODO: We can’t allow a player to bet more than their stake; therefore, we
-        should deduct the payment as the Bet instance is created. A consequence
-        of this is a change to our definition of the Bet class. We don’t need to
-        compute the amount that is lost. We’re not going to deduct the money
-        when the bet resolved, we’re going to deduct the money from the Player
-        object’s stake as part of creating the Bet instance.
-
     TODO: Associate with the specific `Player` making the `Bet`.
 
     Attributes:
@@ -529,7 +521,7 @@ class Player:
 
     def playing(self) -> bool:
         """Returns ``True`` while the player is still active."""
-        if self.stake >= table.minimum and self.rounds_to_go > 0:
+        if self.stake >= self.table.minimum and self.rounds_to_go > 0:
             return True
         return False
 
@@ -543,13 +535,17 @@ class Player:
         self.stake += bet.win_amount()
 
     def lose(self, bet: Bet) -> None:
-        """Notification from the `Game` object that the `Bet` instance was a loser."""
-        ...
+        """Notification from the `Game` object that the `Bet` instance was a loser.
+
+        Does nothing by default, some subclassed players will take particular actions
+        on losses.
+        """
+        pass
 
 
 class Passenger57(Player):
-    """Temporary `Player`. Constructs a `Bet` instance based on the `Outcome`
-    object named 'Black'.
+    """Simple `Player` subclass who always constructs a `Bet` instance based on
+    the `Outcome` object named 'Black'.
 
     Attributes:
         table: The `Table` that is used to place individual `Bet` instances.
@@ -557,7 +553,7 @@ class Passenger57(Player):
         TODO: Inherit or duplicate docstring?
     """
 
-    def __init__(self, table) -> None:
+    def __init__(self, table: Table) -> None:
         """Constructs the `Player` instance with a specific `Table` and `Wheel
         for creating and resolving bets. Also creates the 'black' `Outcome` for
         use in creating bets.
@@ -571,6 +567,58 @@ class Passenger57(Player):
             current_bet = Bet(10, self.black)
             self.table.place_bet(current_bet)
             self.stake -= current_bet.amount
+
+
+class Martingale(Player):
+    """`Martingale` is a `Player` who places bets in Roulette. This player doubles
+    their bet on every loss and reset their bet to a base amount on each win.
+
+    Attributes:
+        table: The `Table` that is used to place individual `Bet` instances.
+        loss_count: The number of losses. This is the number of times to double
+            the bet.
+        bet_multiple: The bet multiplier, based on the number of losses. This
+            starts at 1, and is reset to 1 on each win. It is doubled with each
+            loss. This is always equal to 2**`loss_count`.
+    """
+
+    def __init__(self, table: Table) -> None:
+        super().__init__(table)
+        self.loss_count = 0
+        self.bet_multiple = 1  # TODO: Is this needed?
+
+    def place_bets(self) -> None:
+        """Updates the `Table` object with a bet on 'black'. The amount bet is
+        2**`loss_count`, which is the value of `bet_multiple`."""
+        if self.stake >= self.table.limit:
+            bet_amount = self.table.minimum * (2 ** self.loss_count)
+            current_bet = Bet(bet_amount, self.table.wheel.get_outcome("black"))
+            self.table.place_bet(current_bet)
+            self.stake -= current_bet.amount
+
+    def win(self, bet: Bet) -> None:
+        """Uses the superclass `Player.win()` method to update the stake with an
+        amount won. Then resets `loss_count` to zero and resets `bet_multiple`
+        to 1.
+
+        Args:
+            bet: The winning bet.
+        """
+        super(Martingale, self).win(bet)
+        self.loss_count = 0
+        self.bet_multiple = 1
+
+    def lose(self, bet: Bet) -> None:
+        """Uses the superclass `Player.loss()` to do whatever bookkeeping the
+        superclass already does. Increments `loss_count` by 1 and doubles
+        `bet_multiple`.
+
+        Args:
+            bet: The losing bet.
+        """
+        super(Martingale, self).lose(bet)
+        self.loss_count += 1
+        self.bet_multiple *= 2
 
 
 class Game:
@@ -596,15 +644,17 @@ class Game:
             player: The individual `Player` that places bets, receives winnings
             and pays losses.
         """
-        player.place_bets()
-        self.table.validate()
-        winning_bin = self.wheel.choose()
-        for bet in self.table:
-            if bet.outcome in winning_bin:
-                player.win(bet)
-            else:
-                player.lose(bet)
-        self.table.clear()
+        if player.playing():
+            player.place_bets()
+            self.table.validate()
+            winning_bin = self.wheel.choose()
+            for bet in self.table:
+                if bet.outcome in winning_bin:
+                    player.win(bet)
+                else:
+                    player.lose(bet)
+            self.table.clear()
+            player.rounds_to_go -= 1
 
 
 if __name__ == "__main__":

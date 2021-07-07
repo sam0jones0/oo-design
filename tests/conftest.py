@@ -104,6 +104,14 @@ class MockBet:
     def __repr__(self) -> str:
         return f"Bet(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
 
+    def win_amount(self):
+        return self.amount * 2
+
+
+@pytest.fixture
+def mock_bet():
+    return MockBet
+
 
 @pytest.fixture
 def sample_bets():
@@ -121,3 +129,18 @@ def invalid_bets():
         MockBet(-1, MockOutcome("4-1 Split", 4)),
         MockBet(1000, MockOutcome("Column 1", 6)),
     ]
+
+
+class MockTable:
+    def __init__(self):
+        self.minimum = 10
+        self.limit = 300
+        self.wheel = MockWheel()
+
+    def place_bet(self, *args):
+        return "placed bet"
+
+
+@pytest.fixture
+def mock_table():
+    return MockTable

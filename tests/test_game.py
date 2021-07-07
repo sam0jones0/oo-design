@@ -6,15 +6,25 @@ import pytest
 
 from roulette.roulette import BinBuilder, Game, Passenger57, Table
 
-# FIXME
-def test_game(mock_wheel):
-    wheel = mock_wheel()
+
+def test_game(monkeypatch, seeded_wheel):
+    """Integration test of `Game` using the simple player `Passenger57`, who always
+    bets on black.
+
+    A non-random seeded wheel is used and will choose the following 20 bins:
+    [8, 36, 4, 16, 7, 31, 28, 30, 24, 13, 6, 31, 1, 24, 27, 0, 28, 17, 14, 37]
+    """
+    wheel = seeded_wheel
     BinBuilder().build_bins(wheel)
     table = Table()
-    player = Passenger57(table)
+    table.wheel = wheel
+    player = Passenger57(table)  # Always bets 10 on black.
     game = Game(table, wheel)
-    for _ in range(3):
+
+    while player.playing():
         game.cycle(player)
 
-    assert game.table.bets == []
-
+    # Total of 11/20 winning bins: 8, 4, 31, 28, 24, 13, 6, 31, 24, 28, 17
+    assert player.rounds_to_go == 0
+    assert player.stake == 1020
+    assert game.table.bets == []  # Check table has been cleared.
