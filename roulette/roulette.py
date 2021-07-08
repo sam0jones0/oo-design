@@ -10,6 +10,7 @@ from typing import (
     Iterable,
     Dict,
     List,
+    Any,
 )
 
 if __package__ is None or __package__ == "":
@@ -478,8 +479,8 @@ class Table:
 
     def __iter__(self) -> Iterator[Bet]:
         """Returns an iterator over the available `Bet` instances."""
-        # Note that we need to be able remove bets from the table. Consequently,
-        # we have to update the list, which requires that we create a copy of the list.
+        # We need to be able remove bets from the table. Consequently, we have
+        # to update the list, which requires we create a copy of the list.
         return iter(self.bets[:])
 
     def __str__(self) -> str:
@@ -497,21 +498,36 @@ class Player:
     all subclasses.
 
     Attributes:
-        stake: The player's current stake. Initialised to the player's starting budget.
-        rounds_to_go: Number of rounds left to play. Initialised by the overall
+        stake: The player's current stake. Set to the player's starting
+            budget by the overall simulation control.
+        rounds_to_go: Number of rounds left to play. Set by the overall
             simulation control to the maximum number of rounds to play.
         table: The `Table` object used to place individual `Bet` instances. The
             `Table` object contains the `Wheel` object from which the player can
             get `Outcome` objects used to build `Bet` instances.
     """
 
+    stake: int
+    rounds_to_go: int
+
     def __init__(self, table: Table) -> None:
         """Constructs the `Player` instance with a specific `Table` object for
         placing `Bet` instances.
         """
-        self.stake = 1000
-        self.rounds_to_go = 20
         self.table = table
+        self.stake = 0
+        self.rounds_to_go = 0
+
+    def reset(self, duration: int, stake: int) -> None:
+        """Sets `stake` and `rounds_to_go` according to the values passed by the
+        overall simulation control. Called before the start of a new session.
+
+        Args:
+            duration: The number of `rounds_to_go` for the next session.
+            stake: The initial stake to begin the next session with.
+        """
+        self.rounds_to_go = duration
+        self.stake = stake
 
     def place_bets(self) -> None:
         """Must be overridden in subclass as each `Player` will have different
@@ -550,8 +566,9 @@ class Passenger57(Player):
     Attributes:
         table: The `Table` that is used to place individual `Bet` instances.
         black: The `Outcome` on which this player focuses their betting.
-        TODO: Inherit or duplicate docstring?
     """
+
+    black: Outcome
 
     def __init__(self, table: Table) -> None:
         """Constructs the `Player` instance with a specific `Table` and `Wheel
@@ -561,17 +578,26 @@ class Passenger57(Player):
         super().__init__(table)
         self.black = table.wheel.get_outcome("black")
 
+    def reset(self, duration: int, stake: int) -> None:
+        """Calls parent class reset method.
+
+        Args:
+            duration: The number of `rounds_to_go` for the next session.
+            stake: The initial stake to begin the next session with.
+        """
+        super(Passenger57, self).reset(duration, stake)
+
     def place_bets(self) -> None:
         """Create and place a `Bet` on the 'Black' `Outcome` instance."""
-        if self.stake >= self.table.limit:
-            current_bet = Bet(10, self.black)
+        if self.stake >= self.table.minimum:
+            current_bet = Bet(table.minimum, self.black)
             self.table.place_bet(current_bet)
             self.stake -= current_bet.amount
 
 
 class Martingale(Player):
     """`Martingale` is a `Player` who places bets in Roulette. This player doubles
-    their bet on every loss and reset their bet to a base amount on each win.
+    their bet on every loss and resets their bet to a base amount on each win.
 
     Attributes:
         table: The `Table` that is used to place individual `Bet` instances.
@@ -582,18 +608,48 @@ class Martingale(Player):
             loss. This is always equal to 2**`loss_count`.
     """
 
+    bet_multiple: int
+    loss_count: int
+
     def __init__(self, table: Table) -> None:
         super().__init__(table)
-        self.loss_count = 0
         self.bet_multiple = 1  # TODO: Is this needed?
+        self.loss_count = 0
+
+    def reset(self, duration: int, stake: int) -> None:
+        """Calls parent class reset method and also resets `Martingale` specific
+        attributes for a new session.
+
+        Args:
+            duration: The number of `rounds_to_go` for the next session.
+            stake: The initial stake to begin the next session with.
+        """
+        super(Martingale, self).reset(duration, stake)
+        self.bet_multiple = 1
+        self.loss_count = 0
 
     def place_bets(self) -> None:
         """Updates the `Table` object with a bet on 'black'. The amount bet is
-        2**`loss_count`, which is the value of `bet_multiple`."""
-        if self.stake >= self.table.limit:
-            bet_amount = self.table.minimum * (2 ** self.loss_count)
+        2**`loss_count`, which is the value of `bet_multiple`.
+
+        If `bet_amount` exceeds `table.limit` or `self.stake`, leave the
+        table.
+        """
+        bet_amount = self.table.minimum * (2 ** self.loss_count)
+        if bet_amount > self.stake:
+            self.rounds_to_go = 0
+            # Alternative option in this scenario is the "bold play": bet entire
+            # remaining stake and then restart the strategy.
+        else:
             current_bet = Bet(bet_amount, self.table.wheel.get_outcome("black"))
-            self.table.place_bet(current_bet)
+            try:
+                self.table.place_bet(current_bet)
+            except InvalidBet:
+                # Could reset loss_count/multiple if bet is above `table.limit`:
+                # self.reset(self.rounds_to_go, self.stake)
+                # self.place_bets()
+                self.rounds_to_go = 0
+                return
             self.stake -= current_bet.amount
 
     def win(self, bet: Bet) -> None:
@@ -637,7 +693,7 @@ class Game:
         self.wheel = wheel
         self.table = table
 
-    def cycle(self, player: Passenger57):  # TODO: `Player` type hint missing/wrong.
+    def cycle(self, player: Player):
         """Execute a single cycle of play with a given `Player`.
 
         Args:
@@ -657,11 +713,99 @@ class Game:
             player.rounds_to_go -= 1
 
 
+class Simulator:
+    """`Simulator` exercises the Roulette simulation with a given `Player` placing
+    bets. It reports raw statistics on a number of sessions of play.
+
+    Attributes:
+        init_duration: The duration (`Player.rounds_to_go`) value to use when
+            initialising a `Player` instance for a session.
+        init_stake: The stake value to use when initialising a `Player` instance
+            for a session. This is a count of the initial number of the bets
+            placeable at the table's minimum bet value. I.e set to 100 on a table
+            with a minimum bet of £10 would equate to a £1000 stake.
+        samples: The number of game session cycles to simulate.
+        durations: A `list` of lengths of time the `Player` object remained in
+            the game. Each session produces a duration metric.
+        maxima: A `list` of maximum stakes for the `Player` object from each game
+            session. The highest stake value reached for each session.
+        end_stakes: A `list` of the player's stake at the end of their session.
+        player: The `Player` instance. This encapsulates the betting strategy we
+            are simulating.
+        game: The casino game we are simulating. This is an instance of the `Game`
+            class, which embodies teh various rules, the `Table` object and the
+            `Wheel` instance.
+    """
+
+    init_duration: int
+    init_stake: int
+    samples: int
+    durations: List[int]
+    maxima: List[int]
+    end_stakes: List[int]
+
+    def __init__(self, game: Game, player: Player) -> None:
+        self.init_duration = 250
+        self.init_stake = 100
+        self.samples = 50
+        self.durations = []
+        self.maxima = []
+        self.end_stakes = []
+        self.player = player
+        self.game = game
+
+    def session(self) -> List[int]:
+        """Executes a single game session.
+
+        The `Player` initial `stake` and `cycles_to_go` are set/reset and a full
+        game session is completed accordingly by calling the `game.cycle` method
+        until `player.playing()` returns False. The players `stake` after each
+        round of play is recorded.
+
+        Returns:
+            A list of individual `Player.stake` values after each cycle.
+        """
+        duration = self.init_duration
+        stake = self.game.table.minimum * self.init_stake
+        self.player.reset(duration, stake)
+        stake_values = []
+        while self.player.playing():
+            self.game.cycle(self.player)
+            stake_values.append(self.player.stake)
+
+        return stake_values
+
+    def gather(self) -> None:
+        """Executes the number of games in `samples` and records statistics.
+
+        Each game session returns a `list` of stake values which are used to
+        calculate the duration and maxima metrics for that session.
+        """
+        for _ in range(self.samples):
+            stake_values = self.session()
+            self.durations.append(len(stake_values))
+            self.maxima.append(max(stake_values))
+            self.end_stakes.append(stake_values[-1])
+
+
 if __name__ == "__main__":
     table = Table()
     builder = BinBuilder()
     builder.build_bins(table.wheel)
-    p = Passenger57(table)
-    p.playing()
-    for i in range(10):
-        print("hi")
+    game = Game(table, table.wheel)
+    player = Martingale(table)
+    sim = Simulator(game, player)
+    sim.gather()
+
+    print(f"{'n':5s}{'Duration':>15s}{'Maxima':>15s}{'End Stake':>15s}\n{'-'*50}")
+    for n, duration, maxima, end in zip(
+        range(len(sim.maxima)), sim.durations, sim.maxima, sim.end_stakes
+    ):
+        print(f"{n+1:<5d}{duration:>15d}{maxima:>15d}{end:>15d}")
+
+    print(
+        f"{'-'*50}\n{'Avg':<5s}"
+        f"{sum(sim.durations)//sim.samples:>15d}"
+        f"{sum(sim.maxima)//sim.samples:>15d}"
+        f"{sum(sim.end_stakes)//sim.samples:>15d}"
+    )
