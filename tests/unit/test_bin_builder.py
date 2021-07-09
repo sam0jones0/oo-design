@@ -7,15 +7,16 @@ import pytest
 import roulette
 from roulette import odds
 from roulette.roulette import Outcome
-from .conftest import MockWheel
+from tests.conftest import MockWheel, MockOutcome
 
 
 @pytest.mark.usefixtures("patched_builder")
 class TestBinBuilder:
-    def test_using_monkeypatched_fixture(self, patched_builder):
-        builder = patched_builder
+    def test_using_monkeypatched_fixtures(self, patched_builder):
         wheel = roulette.roulette.Wheel()
+        outcome = roulette.roulette.Outcome("black", 1)
         assert isinstance(wheel, MockWheel)
+        assert isinstance(outcome, MockOutcome)
 
     def test_correct_number_outcomes(self, patched_builder):
         builder = patched_builder

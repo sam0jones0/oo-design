@@ -11,9 +11,10 @@ def test_martingale(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
     table = roulette.roulette.Table()
     player = Martingale(table)
+    player.reset(250, 1000)
 
     assert player.stake == 1000
-    assert player.rounds_to_go == 20
+    assert player.rounds_to_go == 250
     assert player.loss_count == 0
     assert player.bet_multiple == 1
     assert player.playing()
@@ -37,5 +38,7 @@ def test_martingale(monkeypatch, mock_table, mock_bet):
     assert player.loss_count == 0
     assert player.bet_multiple == 1
 
-    player.stake = 0
+    for _ in range(10):
+        player.lose(mock_bet(40, "an_outcome"))
+    player.place_bets()
     assert not player.playing()

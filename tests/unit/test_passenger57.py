@@ -11,6 +11,7 @@ def test_passenger57(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
     table = roulette.roulette.Table()
     player = Passenger57(table)
+    player.reset(250, 1000)
 
     assert player.stake == 1000
     assert player.playing()

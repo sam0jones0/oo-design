@@ -11,6 +11,7 @@ from typing import (
     Dict,
     List,
     Any,
+    Set,
 )
 
 if __package__ is None or __package__ == "":
@@ -156,13 +157,15 @@ class Wheel:
     all_outcomes: Dict[str, Outcome]
 
     def __init__(self) -> None:
-        """Creates a new wheel with 38 empty `Bin` instances, a new random number
-         generator instance and a dict to store all possible outcomes.
-        TODO: Full initialization of the Bin instances.
+        """Creates a new wheel with 38 empty `Bin` instances and then calls on
+        `BinBuilder` to populate them. Also creates a new random number
+        generator instance and a dict to store all possible outcomes.
         """
         self.bins = tuple(Bin() for i in range(38))
         self.all_outcomes = dict()
         self.rng = random.Random()
+        self.bin_builder = BinBuilder()
+        self.bin_builder.build_bins(self)
 
     def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
         """Adds the given `Outcomes` to the `Bin` instance with the given number
@@ -558,6 +561,11 @@ class Player:
         """
         pass
 
+    def winners(self, outcomes: FrozenSet[Outcome]) -> None:
+        """This is notification from the `Game` class of all the winning outcomes.
+        Some subclasses will process this information."""
+        pass
+
 
 class Passenger57(Player):
     """Simple `Player` subclass who always constructs a `Bet` instance based on
@@ -590,7 +598,7 @@ class Passenger57(Player):
     def place_bets(self) -> None:
         """Create and place a `Bet` on the 'Black' `Outcome` instance."""
         if self.stake >= self.table.minimum:
-            current_bet = Bet(table.minimum, self.black)
+            current_bet = Bet(self.table.minimum, self.black)
             self.table.place_bet(current_bet)
             self.stake -= current_bet.amount
 
@@ -677,6 +685,49 @@ class Martingale(Player):
         self.bet_multiple *= 2
 
 
+class SevenReds(Martingale):
+    """This is a `Martingale` player who places bets in roulette. They wait until
+    the wheel has spun red seven times in a row before betting on black.
+
+    Attributes:
+        table: The `Table` that is used to place individual `Bet` instances.
+        loss_count: The number of losses. This is the number of times to double
+            the bet.
+        bet_multiple: The bet multiplier, based on the number of losses. This
+            starts at 1, and is reset to 1 on each win. It is doubled with each
+            loss. This is always equal to 2**`loss_count`.
+        red_count: The number of reds yet to go. Inits to 7, and is reset to 7 on
+            each non-red outcome, and decrements by 1 on each red outcome.
+    """
+
+    def __init__(self, table: Table) -> None:
+        """Initialise parent class attributes and set `red_count` to it's starting
+        value of 7.
+        """
+        super().__init__(table)
+        self.red_count = 7
+
+    def place_bets(self) -> None:
+        """Places a bet on black using the Martingale betting system if we have
+        seen seven reds in a row.
+        """
+        if self.red_count == 0:
+            super(SevenReds, self).place_bets()
+
+    def winners(self, outcomes: FrozenSet[Outcome]) -> None:
+        """This is notification from the `Game` class of all the winning outcomes.
+        If this includes red, then `red_count` is decremented. Otherwise, `red_count`
+        is reset to 7.
+
+        Args:
+            outcomes: The `Outcome` set from a `Bin`.
+        """
+        if self.table.wheel.get_outcome("red") in outcomes:
+            self.red_count -= 1
+        else:
+            self.red_count = 7
+
+
 class Game:
     """`Game` manages the sequence of actions that defines the game of Roulette.
 
@@ -704,6 +755,7 @@ class Game:
             player.place_bets()
             self.table.validate()
             winning_bin = self.wheel.choose()
+            player.winners(winning_bin.outcomes)
             for bet in self.table:
                 if bet.outcome in winning_bin:
                     player.win(bet)
@@ -790,10 +842,8 @@ class Simulator:
 
 if __name__ == "__main__":
     table = Table()
-    builder = BinBuilder()
-    builder.build_bins(table.wheel)
     game = Game(table, table.wheel)
-    player = Martingale(table)
+    player = SevenReds(table)
     sim = Simulator(game, player)
     sim.gather()
 

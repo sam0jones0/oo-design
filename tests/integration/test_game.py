@@ -7,7 +7,7 @@ import pytest
 from roulette.roulette import BinBuilder, Game, Passenger57, Table
 
 
-def test_game(monkeypatch, seeded_wheel):
+def test_game(seeded_wheel):
     """Integration test of `Game` using the simple player `Passenger57`, who always
     bets on black.
 
@@ -15,10 +15,10 @@ def test_game(monkeypatch, seeded_wheel):
     [8, 36, 4, 16, 7, 31, 28, 30, 24, 13, 6, 31, 1, 24, 27, 0, 28, 17, 14, 37]
     """
     wheel = seeded_wheel
-    BinBuilder().build_bins(wheel)
     table = Table()
     table.wheel = wheel
     player = Passenger57(table)  # Always bets 10 on black.
+    player.reset(20, 1000)
     game = Game(table, wheel)
 
     while player.playing():

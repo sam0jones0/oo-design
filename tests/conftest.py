@@ -60,13 +60,22 @@ def wheel_with_outcomes(mock_outcomes):
 
 
 @pytest.fixture(scope="module")
-def patched_builder(monkey_module, patched_wheel):
+def patched_builder(monkey_module):
     monkey_module.setattr(roulette.roulette, "Outcome", MockOutcome)
+    monkey_module.setattr(roulette.roulette, "Wheel", MockWheel)
     wheel = Wheel()
-    builder = BinBuilder()
-    builder.build_bins(wheel)  # Type: ignore
 
-    return builder
+    return wheel.bin_builder
+
+
+class MockBuilder:
+    def build_bins(self, *args):
+        pass
+
+
+@pytest.fixture(scope="module")
+def do_not_build_bins(monkey_module):
+    monkey_module.setattr(roulette.roulette, "BinBuilder", MockBuilder)
 
 
 class MockOutcome:
