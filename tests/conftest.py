@@ -135,25 +135,24 @@ def mock_bet():
 @pytest.fixture
 def sample_bets():
     return [
-        MockBet(10, MockOutcome("Red", 1)),
-        MockBet(20, MockOutcome("4-1 Split", 4)),
-        MockBet(50, MockOutcome("Dozen 1", 6)),
+        MockBet(1, MockOutcome("Red", 1)),
+        MockBet(2, MockOutcome("4-1 Split", 4)),
+        MockBet(5, MockOutcome("Dozen 1", 6)),
     ]
 
 
 @pytest.fixture
 def invalid_bets():
     return [
-        MockBet(1, MockOutcome("Red", 1)),
+        MockBet(0, MockOutcome("Red", 1)),
         MockBet(-1, MockOutcome("4-1 Split", 4)),
-        MockBet(1000, MockOutcome("Column 1", 6)),
+        MockBet(100, MockOutcome("Column 1", 6)),
     ]
 
 
 class MockTable:
     def __init__(self):
-        self.minimum = 10
-        self.limit = 300
+        self.limit = 30
         self.wheel = MockWheel()
 
     def place_bet(self, *args):

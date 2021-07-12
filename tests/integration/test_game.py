@@ -18,7 +18,7 @@ def test_game(seeded_wheel):
     table = Table()
     table.wheel = wheel
     player = Passenger57(table)  # Always bets 10 on black.
-    player.reset(20, 1000)
+    player.reset(20, 100)
     game = Game(table, wheel)
 
     while player.playing():
@@ -26,5 +26,5 @@ def test_game(seeded_wheel):
 
     # Total of 11/20 winning bins: 8, 4, 31, 28, 24, 13, 6, 31, 24, 28, 17
     assert player.rounds_to_go == 0
-    assert player.stake == 1020
+    assert player.stake == 102
     assert game.table.bets == []  # Check table has been cleared.

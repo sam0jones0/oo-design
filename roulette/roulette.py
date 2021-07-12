@@ -411,8 +411,6 @@ class Table:
     Attributes:
         limit: This is the table limit. The sum of the bets from a `Player` object
             must be less than or equal to this limit.
-        minimum: This is the table minimum. Each individual bet from a `Player`
-            object must be greater than this limit.
         bets: This is a list of the `Bet` instances currently active. These will
             result in either wins or losses to the `Player` object.
         bets_total: A running total of all `Bet`'s amounts in play.
@@ -420,15 +418,13 @@ class Table:
 
     bets: List[Bet]
     limit: int
-    minimum: int
     bets_total: int
 
     def __init__(self, *bets: Bet) -> None:
         """Creates an empty list of bets."""
         self.bets = []
         self.bets_total = 0
-        self.limit = 300
-        self.minimum = 10
+        self.limit = 30
         self.wheel = Wheel()
 
         if bets is not None:
@@ -437,41 +433,35 @@ class Table:
 
     def place_bet(self, bet: Bet) -> None:
         """Adds this ``bet`` to the list of active `bets` after checking if placing
-        this bet does not violate the table minimum bet/limit rules.
+        this bet does not violate the `Table` bet limit rules.
 
         Args:
             bet: A `Bet` instances to be added to the table.
 
         Raises:
-            InvalidBet: Placing this ``bet`` breaks the table minimum/limit rules.
+            InvalidBet: Placing this ``bet`` breaks the `Table` limit rules.
         """
-        if (
-            self.minimum <= bet.amount <= self.limit
-            and self.bets_total + bet.amount <= self.limit
-        ):
+        if 0 < bet.amount <= self.limit and self.bets_total + bet.amount <= self.limit:
             self.bets.append(bet)
             self.bets_total += bet.amount
         else:
             raise InvalidBet("Placing this bet violates table min/limit rules.")
 
     def validate(self) -> bool:
-        """Confirms the table-limit rules have been adhered to such that each
-        bet is at least `self.minimum` and the sum of all bets is no greater
-        than `self.limit`.
+        """Confirms the table-limit rules have been adhered to such that the sum
+        of all bets is no greater than `self.limit`.
 
         Returns:
             True, if `Table` state is valid.
 
         Raises:
-            InvalidBet: The bets don't pass the table minimum/limit rules.
+            InvalidBet: The bets don't pass the `Table` limit rules.
         """
         total_amount = 0
         for bet in self.bets:
             total_amount += bet.amount
-            if not (
-                self.minimum <= bet.amount <= self.limit and total_amount <= self.limit
-            ):
-                raise InvalidBet("Active bets violate the table min/limit rules.")
+            if not (0 < bet.amount <= self.limit and total_amount <= self.limit):
+                raise InvalidBet("Active bets violate the table limit rules.")
         return True
 
     def clear(self) -> None:
@@ -501,8 +491,9 @@ class Player:
     all subclasses.
 
     Attributes:
-        stake: The player's current stake. Set to the player's starting
-            budget by the overall simulation control.
+        stake: The player's current stake represented as multiples of the table's
+            minimum bet. Set to the player's starting budget by the overall
+            simulation control.
         rounds_to_go: Number of rounds left to play. Set by the overall
             simulation control to the maximum number of rounds to play.
         table: The `Table` object used to place individual `Bet` instances. The
@@ -540,9 +531,10 @@ class Player:
 
     def playing(self) -> bool:
         """Returns ``True`` while the player is still active."""
-        if self.stake >= self.table.minimum and self.rounds_to_go > 0:
+        if self.rounds_to_go > 0 and self.stake > 0:
             return True
-        return False
+        else:
+            return False
 
     def win(self, bet: Bet) -> None:
         """Notification from the `Game` object that the `Bet` instance was a
@@ -600,11 +592,10 @@ class Passenger57(Player):
         super(Passenger57, self).reset(duration, stake)
 
     def place_bets(self) -> None:
-        """Create and place a `Bet` on the 'Black' `Outcome` instance."""
-        if self.stake >= self.table.minimum:
-            current_bet = Bet(self.table.minimum, self.black)
-            self.table.place_bet(current_bet)
-            self.stake -= current_bet.amount
+        """Create and place one `Bet` on the 'Black' `Outcome` instance."""
+        current_bet = Bet(1, self.black)  # Stake will be >= 1 if self.playing()
+        self.table.place_bet(current_bet)
+        self.stake -= current_bet.amount
 
 
 class Martingale(Player):
@@ -647,7 +638,7 @@ class Martingale(Player):
         If `bet_amount` exceeds `table.limit` or `self.stake`, leave the
         table.
         """
-        bet_amount = self.table.minimum * (2 ** self.loss_count)
+        bet_amount = 1 * (2 ** self.loss_count)
         if bet_amount > self.stake:
             self.rounds_to_go = 0
             # Alternative option in this scenario is the "bold play": bet entire
@@ -821,9 +812,7 @@ class Simulator:
         Returns:
             A list of individual `Player.stake` values after each cycle.
         """
-        duration = self.init_duration
-        stake = self.game.table.minimum * self.init_stake
-        self.player.reset(duration, stake)
+        self.player.reset(self.init_duration, self.init_stake)
         stake_values = []
         while self.player.playing():
             self.game.cycle(self.player)
@@ -847,7 +836,7 @@ class Simulator:
 if __name__ == "__main__":
     table = Table()
     game = Game(table, table.wheel)
-    player = SevenReds(table)
+    player = Martingale(table)
     sim = Simulator(game, player)
     sim.gather()
 

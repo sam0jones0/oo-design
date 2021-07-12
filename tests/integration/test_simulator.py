@@ -21,5 +21,5 @@ def test_simulator(seeded_wheel):
     assert len(sim.maxima) == 20
     assert len(sim.end_stakes) == 20
     assert sum(sim.durations) // sim.samples == 20
-    assert sum(sim.maxima) // sim.samples == 1031
-    assert sum(sim.end_stakes) // sim.samples == 994
+    assert sum(sim.maxima) // sim.samples == 103
+    assert sum(sim.end_stakes) // sim.samples == 99

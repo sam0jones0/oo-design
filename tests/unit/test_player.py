@@ -17,16 +17,16 @@ def test_player(monkeypatch, mock_table, mock_bet):
     assert player.rounds_to_go == 0
     assert not player.playing()
 
-    player.reset(250, 1000)
-    assert player.stake == 1000
+    player.reset(250, 100)
+    assert player.stake == 100
     assert player.rounds_to_go == 250
     assert player.playing()
 
     with pytest.raises(NotImplementedError):
         player.place_bets()
 
-    player.win(mock_bet(500, "an_outcome"))
-    assert player.stake == 2000
+    player.win(mock_bet(50, "an_outcome"))
+    assert player.stake == 200
 
-    assert player.lose(mock_bet(500, "an_outcome")) is None
+    assert player.lose(mock_bet(50, "an_outcome")) is None
     assert player.winners("outcome_set") is None  # type: ignore

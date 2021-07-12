@@ -37,7 +37,7 @@ class TestTable:
         b1, b2, b3 = sample_bets
         t = Table(b1, b2)
         t.place_bet(b3)
-        assert t.bets_total == 80
+        assert t.bets_total == 8
         t.clear()
         assert t.bets_total == 0
         assert t.bets == []
@@ -50,7 +50,7 @@ class TestTable:
 
     def test_is_valid(self, sample_bets):
         t = Table(*sample_bets)
-        # sum(bets.amount for bet in t) = 80
+        # sum(bets.amount for bet in t) = 8
         assert t.validate()
 
     def test_iter(self, sample_bets):
@@ -60,9 +60,9 @@ class TestTable:
 
     def test_str_repr(self, sample_bets):
         t = Table(*sample_bets)
-        assert str(t) == "10 on Red 1:1, 20 on 4-1 Split 4:1, 50 on Dozen 1 6:1"
+        assert str(t) == "1 on Red 1:1, 2 on 4-1 Split 4:1, 5 on Dozen 1 6:1"
         assert (
-            repr(t) == "Table(Bet(amount=10, outcome=Outcome(name='Red', odds=1)), "
-            "Bet(amount=20, outcome=Outcome(name='4-1 Split', odds=4)), "
-            "Bet(amount=50, outcome=Outcome(name='Dozen 1', odds=6)))"
+            repr(t) == "Table(Bet(amount=1, outcome=Outcome(name='Red', odds=1)), "
+            "Bet(amount=2, outcome=Outcome(name='4-1 Split', odds=4)), "
+            "Bet(amount=5, outcome=Outcome(name='Dozen 1', odds=6)))"
         )
