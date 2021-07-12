@@ -563,7 +563,11 @@ class Player:
 
     def winners(self, outcomes: FrozenSet[Outcome]) -> None:
         """This is notification from the `Game` class of all the winning outcomes.
-        Some subclasses will process this information."""
+        Some subclasses will process this information.
+
+        Args:
+            outcomes: The `Outcome` set from a `Bin`.
+        """
         pass
 
 
@@ -654,8 +658,8 @@ class Martingale(Player):
                 self.table.place_bet(current_bet)
             except InvalidBet:
                 # Could reset loss_count/multiple if bet is above `table.limit`:
-                # self.reset(self.rounds_to_go, self.stake)
-                # self.place_bets()
+                #   self.reset(self.rounds_to_go, self.stake)
+                #   self.place_bets()
                 self.rounds_to_go = 0
                 return
             self.stake -= current_bet.amount

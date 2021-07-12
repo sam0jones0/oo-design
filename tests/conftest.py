@@ -30,7 +30,7 @@ class MockWheel:
         return None
 
     def get_outcome(self, name):
-        return MockOutcome("Black", 1)
+        return MockOutcome("red", 1)
 
     def choose(self):
         return tuple("bin_1")
@@ -91,6 +91,16 @@ class MockOutcome:
 
     def __repr__(self) -> str:
         return f"Outcome(name={repr(self.name)}, odds={repr(self.odds)})"
+
+    def __eq__(self, other):
+        if not isinstance(other, MockOutcome):
+            return NotImplemented
+        return self.name == other.name
+
+
+@pytest.fixture
+def mock_outcome():
+    return MockOutcome
 
 
 @pytest.fixture
