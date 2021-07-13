@@ -1,7 +1,7 @@
 """
 TODO
 """
-
+import math
 import random
 from typing import (
     Tuple,
@@ -787,17 +787,17 @@ class Simulator:
     init_duration: int
     init_stake: int
     samples: int
-    durations: List[int]
-    maxima: List[int]
-    end_stakes: List[int]
+    durations: "IntegerStatistics[int]"
+    maxima: "IntegerStatistics[int]"
+    end_stakes: "IntegerStatistics[int]"
 
     def __init__(self, game: Game, player: Player) -> None:
         self.init_duration = 250
         self.init_stake = 100
         self.samples = 50
-        self.durations = []
-        self.maxima = []
-        self.end_stakes = []
+        self.durations = IntegerStatistics()
+        self.maxima = IntegerStatistics()
+        self.end_stakes = IntegerStatistics()
         self.player = player
         self.game = game
 
@@ -833,6 +833,22 @@ class Simulator:
             self.end_stakes.append(stake_values[-1])
 
 
+class IntegerStatistics(list):
+    """Computes several simple descriptive statistics of `int` values in a `list`.
+
+    This extends `list` with some additional methods.
+    """
+
+    def mean(self) -> float:
+        """Computes the mean of the `List` of values."""
+        return sum(self) / len(self)
+
+    def stdev(self) -> float:
+        """Computes the standard deviation of the `List` of values."""
+        m = self.mean()
+        return math.sqrt(sum((x - m) ** 2 for x in self) / (len(self) - 1))
+
+
 if __name__ == "__main__":
     table = Table()
     game = Game(table, table.wheel)
@@ -847,8 +863,12 @@ if __name__ == "__main__":
         print(f"{n+1:<5d}{duration:>15d}{maxima:>15d}{end:>15d}")
 
     print(
-        f"{'-'*50}\n{'Avg':<5s}"
-        f"{sum(sim.durations)//sim.samples:>15d}"
-        f"{sum(sim.maxima)//sim.samples:>15d}"
-        f"{sum(sim.end_stakes)//sim.samples:>15d}"
+        f"{'-'*50}\n{'Mean':<5s}"
+        f"{sim.durations.mean():>15.2f}"
+        f"{sim.maxima.mean():>15.2f}"
+        f"{sim.end_stakes.mean():>15.2f}"
+        f"\n{'Stdev':<5s}"
+        f"{sim.durations.stdev():>15.2f}"
+        f"{sim.maxima.stdev():>15.2f}"
+        f"{sim.end_stakes.stdev():>15.2f}"
     )
