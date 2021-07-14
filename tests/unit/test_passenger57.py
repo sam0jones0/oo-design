@@ -4,6 +4,7 @@ import pytest
 
 import roulette
 from roulette.roulette import Passenger57
+from tests.conftest import MockOutcome
 
 
 def test_passenger57(monkeypatch, mock_table, mock_bet):
@@ -11,6 +12,7 @@ def test_passenger57(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
     table = roulette.roulette.Table()
     player = Passenger57(table)
+    assert isinstance(player.black, MockOutcome)
     player.reset(250, 100)
 
     assert player.stake == 100
@@ -29,3 +31,7 @@ def test_passenger57(monkeypatch, mock_table, mock_bet):
 
     player.rounds_to_go = 0
     assert not player.playing()
+
+    assert str(table.bets[0]) == "1 on red 1:1"
+    with pytest.raises(IndexError):
+        assert str(table.bets[1]) == "2 on red 1:1"

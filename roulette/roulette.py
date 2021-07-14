@@ -3,6 +3,7 @@ TODO
 """
 import math
 import random
+import typing
 from typing import (
     Tuple,
     FrozenSet,
@@ -723,6 +724,29 @@ class SevenReds(Martingale):
             self.red_count = 7
 
 
+class PlayerRandom(Player):
+    """A `Player` who places bets in roulette. This player makes random bets
+    around the layout.
+
+    Attributes:
+        rng: A random number generator for selecting outcomes to bet on.
+        table: The `Table` object which will accept the bets. It also provides
+            access to the `wheel.all_outcomes` structure to pick from.
+    """
+
+    def __init__(self, table: Table) -> None:
+        """Invoke superclass constructor and and initialise the rng."""
+        super().__init__(table)
+        self.rng = random.Random()
+
+    def place_bets(self) -> None:
+        """Updates the `Table` object with a randomly placed `Bet` instance."""
+        random_outcome = self.rng.choice(list(self.table.wheel.all_outcomes.values()))
+        current_bet = Bet(1, random_outcome)
+        self.table.place_bet(current_bet)
+        self.stake -= current_bet.amount
+
+
 class Game:
     """`Game` manages the sequence of actions that defines the game of Roulette.
 
@@ -787,15 +811,15 @@ class Simulator:
     init_duration: int
     init_stake: int
     samples: int
-    durations: "IntegerStatistics[int]"
-    maxima: "IntegerStatistics[int]"
-    end_stakes: "IntegerStatistics[int]"
+    durations: "IntegerStatistics"
+    maxima: "IntegerStatistics"
+    end_stakes: "IntegerStatistics"
 
     def __init__(self, game: Game, player: Player) -> None:
         self.init_duration = 250
         self.init_stake = 100
         self.samples = 50
-        self.durations = IntegerStatistics()
+        self.durations = IntegerStatistics()  # TODO https://stackoverflow.com/questions/54913988/python-typing-for-a-subclass-of-list
         self.maxima = IntegerStatistics()
         self.end_stakes = IntegerStatistics()
         self.player = player
@@ -833,7 +857,7 @@ class Simulator:
             self.end_stakes.append(stake_values[-1])
 
 
-class IntegerStatistics(list):
+class IntegerStatistics(typing.List[int]):
     """Computes several simple descriptive statistics of `int` values in a `list`.
 
     This extends `list` with some additional methods.
@@ -852,7 +876,7 @@ class IntegerStatistics(list):
 if __name__ == "__main__":
     table = Table()
     game = Game(table, table.wheel)
-    player = Martingale(table)
+    player = PlayerRandom(table)
     sim = Simulator(game, player)
     sim.gather()
 

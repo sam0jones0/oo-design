@@ -25,7 +25,13 @@ def patched_wheel(monkey_module):
 class MockWheel:
     """Mock of `Wheel` class."""
 
-    @staticmethod
+    def __init__(self):
+        self.all_outcomes = {
+            "Red": MockOutcome("Red", 1),
+            "4-1 Split": MockOutcome("4-1 Split", 4),
+            "Dozen 1": MockOutcome("Dozen 1", 6),
+        }
+
     def add_outcomes(*args, **kwargs):
         return None
 
@@ -154,9 +160,10 @@ class MockTable:
     def __init__(self):
         self.limit = 30
         self.wheel = MockWheel()
+        self.bets = []
 
-    def place_bet(self, *args):
-        return "placed bet"
+    def place_bet(self, bet):
+        self.bets.append(bet)
 
 
 @pytest.fixture

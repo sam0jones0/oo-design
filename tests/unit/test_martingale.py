@@ -40,5 +40,11 @@ def test_martingale(monkeypatch, mock_table, mock_bet):
 
     for _ in range(10):
         player.lose(mock_bet(4, "an_outcome"))
-    player.place_bets()
+    player.place_bets()  # This bet_amount will exceed table.limit.
     assert not player.playing()
+
+    assert str(table.bets[0]) == "1 on red 1:1"
+    assert str(table.bets[1]) == "2 on red 1:1"
+    assert str(table.bets[2]) == "4 on red 1:1"
+    with pytest.raises(IndexError):
+        assert str(table.bets[3]) == "128 on red 1:1"

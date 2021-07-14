@@ -37,3 +37,7 @@ def test_sevenreds(monkeypatch, mock_table, mock_bet, mock_outcome):
 
     player.winners([mock_outcome("black", 1)])  # type: ignore
     assert player.red_count == 7
+
+    assert str(table.bets[0]) == "1 on red 1:1"
+    with pytest.raises(IndexError):
+        assert str(table.bets[1]) == "2 on red 1:1"
