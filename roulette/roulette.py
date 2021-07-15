@@ -11,8 +11,7 @@ from typing import (
     Iterable,
     Dict,
     List,
-    Any,
-    Set,
+    Type,
 )
 
 if __package__ is None or __package__ == "":
@@ -641,20 +640,15 @@ class Martingale(Player):
         """
         bet_amount = 1 * (2 ** self.loss_count)
         if bet_amount > self.stake:
-            self.rounds_to_go = 0
-            # Alternative option in this scenario is the "bold play": bet entire
-            # remaining stake and then restart the strategy.
-        else:
-            current_bet = Bet(bet_amount, self.table.wheel.get_outcome("black"))
-            try:
-                self.table.place_bet(current_bet)
-            except InvalidBet:
-                # Could reset loss_count/multiple if bet is above `table.limit`:
-                #   self.reset(self.rounds_to_go, self.stake)
-                #   self.place_bets()
-                self.rounds_to_go = 0
-                return
-            self.stake -= current_bet.amount
+            bet_amount = self.stake
+        current_bet = Bet(bet_amount, self.table.wheel.get_outcome("black"))
+        try:
+            self.table.place_bet(current_bet)
+        except InvalidBet:
+            self.reset(self.rounds_to_go, self.stake)
+            self.place_bets()
+            return
+        self.stake -= current_bet.amount
 
     def win(self, bet: Bet) -> None:
         """Uses the superclass `Player.win()` method to update the stake with an
@@ -735,7 +729,7 @@ class PlayerRandom(Player):
     """
 
     def __init__(self, table: Table) -> None:
-        """Invoke superclass constructor and and initialise the rng."""
+        """Invokes superclass constructor and and initialise the rng."""
         super().__init__(table)
         self.rng = random.Random()
 
@@ -745,6 +739,140 @@ class PlayerRandom(Player):
         current_bet = Bet(1, random_outcome)
         self.table.place_bet(current_bet)
         self.stake -= current_bet.amount
+
+
+class Player1326(Player):
+    """ "A `Player` who follows the 1-3-2-6 betting system. The player has a preferred
+    `Outcome` instance. This should be an even money bet. The player also has a
+    current betting state that determines the current bet to place, and what next
+    state applies when the bet has won or lost.
+
+    Attributes:
+        table: The `Table` object which will accept the bets.
+        outcome: This is the player's preferred `Outcome` instance, fetched from the
+            `Table.Wheel` object.
+        state: The current state of the 1-3-2-6 betting system. It will be an instance
+            of the `Player1326State` class. This will be one of the four states:
+            no wins, one win, two wins or three wins.
+    """
+    state: "Player1326State"
+    outcome: Outcome
+
+    def __init__(self, table: Table) -> None:
+        """Invokes the superclass constructor and initialises the state and outcome."""
+        super().__init__(table)
+        self.outcome = self.table.wheel.get_outcome("Black")
+        self.state = Player1326NoWins(self)
+
+    def place_bets(self) -> None:
+        """Updates the `Table` with a bet created by the current state. Delegates
+        `Bet` creation to the `self.state.current_bet` method."""
+        current_bet = self.state.current_bet()
+        if current_bet.amount > self.stake:
+            current_bet.amount = self.stake
+        self.table.place_bet(current_bet)
+        self.stake -= current_bet.amount
+
+    def win(self, bet: Bet) -> None:
+        """Uses the superclass method to update stake with the amount won. Uses
+        the current state to transition to the next state.
+
+        Args:
+            bet: The `Bet` which won.
+        """
+        super(Player1326, self).win(bet)
+        self.state = self.state.next_won()
+
+    def lose(self, bet: Bet) -> None:
+        """Uses the current state to transition to the next state.
+
+        Args:
+            bet: The `Bet` which lost.
+        """
+        self.state = self.state.next_lost()
+
+
+class Player1326State:
+    """Superclass for all of the states in the 1-3-2-6 betting system.
+
+    Attributes:
+        player: The `Player1326` player currently in this state. This object will
+            be used to provide the `Outcome` object used in creating the `Bet`
+            instance.
+        next_state_win: The next state to transition to if the bet was a winner.
+        bet_amount: The amount bet in this state.
+    """
+
+    def __init__(
+        self,
+        player: Player1326,
+        next_state_win: Type["Player1326State"],
+        bet_amount: int,
+    ) -> None:
+        """Initialise class with arguments provided by the subclass state constructors."""
+        self.player = player
+        self.next_state_win = next_state_win
+        self.bet_amount = bet_amount
+
+    def current_bet(self) -> Bet:
+        """Constructs a new `Bet` object from the ``player``'s preferred `Outcome`
+        instance. Each subclass provices a different multiplier used when creating
+        this `Bet` object.
+
+        Returns:
+            The `Bet` to be placed when in this state.
+        """
+        return Bet(self.bet_amount, self.player.outcome)
+
+    def next_won(self) -> "Player1326State":
+        """Constructs the new `Player1326State` instance to be used when the bet
+        was a winner
+
+        Returns:
+            The `Player1326State` to transition to on a winning bet.
+        """
+        return self.next_state_win(self.player)  # type: ignore
+
+    def next_lost(self) -> "Player1326State":
+        """Constructs the new `Player1326State` instance to be used when the bet
+        was a loser. This method is the same for each subclass.
+
+        Returns:
+            The `Player1326State` to transition to on a losing bet.
+        """
+        return Player1326NoWins(self.player)
+
+
+class Player1326NoWins(Player1326State):
+    """Defines bet and state transition rules in the 1-3-2-6 betting system
+    for when there are no wins."""
+
+    def __init__(self, player: Player1326):
+        super(Player1326NoWins, self).__init__(player, Player1326OneWin, 1)
+
+
+class Player1326OneWin(Player1326State):
+    """Defines bet and state transition rules in the 1-3-2-6 betting system
+    for when there is one win."""
+
+    def __init__(self, player: Player1326):
+        super(Player1326OneWin, self).__init__(player, Player1326TwoWins, 3)
+
+
+class Player1326TwoWins(Player1326State):
+    """Defines bet and state transition rules in the 1-3-2-6 betting system
+    for when there are two wins."""
+
+    def __init__(self, player: Player1326):
+        super(Player1326TwoWins, self).__init__(player, Player1326ThreeWins, 2)
+
+
+class Player1326ThreeWins(Player1326State):
+    """Defines bet and state transition rules in the 1-3-2-6 betting system
+    for when there are three wins."""
+
+    def __init__(self, player: Player1326):
+        super(Player1326ThreeWins, self).__init__(player, Player1326NoWins, 6)
 
 
 class Game:
@@ -819,7 +947,7 @@ class Simulator:
         self.init_duration = 250
         self.init_stake = 100
         self.samples = 50
-        self.durations = IntegerStatistics()  # TODO https://stackoverflow.com/questions/54913988/python-typing-for-a-subclass-of-list
+        self.durations = IntegerStatistics()
         self.maxima = IntegerStatistics()
         self.end_stakes = IntegerStatistics()
         self.player = player
@@ -876,7 +1004,7 @@ class IntegerStatistics(typing.List[int]):
 if __name__ == "__main__":
     table = Table()
     game = Game(table, table.wheel)
-    player = PlayerRandom(table)
+    player = Player1326(table)
     sim = Simulator(game, player)
     sim.gather()
 
