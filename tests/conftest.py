@@ -169,3 +169,13 @@ class MockTable:
 @pytest.fixture
 def mock_table():
     return MockTable
+
+
+class MockPlayer:
+    def __init__(self):
+        self.outcome = MockOutcome("Black", 1)
+
+
+@pytest.fixture
+def mock_player():
+    return MockPlayer

@@ -755,6 +755,7 @@ class Player1326(Player):
             of the `Player1326State` class. This will be one of the four states:
             no wins, one win, two wins or three wins.
     """
+
     state: "Player1326State"
     outcome: Outcome
 
@@ -816,7 +817,7 @@ class Player1326State:
 
     def current_bet(self) -> Bet:
         """Constructs a new `Bet` object from the ``player``'s preferred `Outcome`
-        instance. Each subclass provices a different multiplier used when creating
+        instance. Each subclass provides a different multiplier used when creating
         this `Bet` object.
 
         Returns:

@@ -46,5 +46,6 @@ def test_martingale(monkeypatch, mock_table, mock_bet):
     assert str(table.bets[0]) == "1 on red 1:1"
     assert str(table.bets[1]) == "2 on red 1:1"
     assert str(table.bets[2]) == "4 on red 1:1"
+    assert str(table.bets[3]) == "101 on red 1:1"  # Bet's entire remaining stake.
     with pytest.raises(IndexError):
-        assert str(table.bets[3]) == "128 on red 1:1"
+        assert str(table.bets[4]) == "256 on red 1:1"
