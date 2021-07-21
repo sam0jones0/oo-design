@@ -37,16 +37,16 @@ class Outcome:
 
     Attributes:
         name: The name of this `Outcome`. E.g. ``1``, ``Red``, ``Even`` or ``Low``.
-        odds: The payout odds of this outcome. Most odds are stated as 1:1 or
+        outcome_odds: The payout odds of this outcome. Most odds are stated as 1:1 or
             17:1, we only keep the numerator (17) and assume the denominator is 1.
     """
 
-    def __init__(self, name: str, odds: int) -> None:
+    def __init__(self, name: str, outcome_odds: int) -> None:
         """Sets the instance `name` and `odds` from the parameter `name` and
         `odds`.
         """
         self.name = name
-        self.odds = odds
+        self.odds = outcome_odds
 
     def win_amount(self, amount: int) -> int:
         """Multiplies this `Outcome`'s odds by the given ``amount`` and returns
@@ -161,7 +161,7 @@ class Wheel:
         `BinBuilder` to populate them. Also creates a new random number
         generator instance and a dict to store all possible outcomes.
         """
-        self.bins = tuple(Bin() for i in range(38))
+        self.bins = tuple(Bin() for _ in range(38))
         self.all_outcomes = dict()
         self.rng = random.Random()
         self.bin_builder = BinBuilder()
@@ -267,69 +267,69 @@ class BinBuilder:
             wheel.add_outcomes(bin_num, outcomes)
 
     def gen_straight_bets(self) -> None:
-        for n in range(1, 37):
-            outcome = Outcome(f"Number {n}", odds.STRAIGHT)
-            self.temp_bins[n].append(outcome)
+        for num in range(1, 37):
+            outcome = Outcome(f"Number {num}", odds.STRAIGHT)
+            self.temp_bins[num].append(outcome)
         self.temp_bins[0].append(Outcome("Number 0", odds.STRAIGHT))
         self.temp_bins[37].append(Outcome("Number 00", odds.STRAIGHT))
 
     def gen_split_bets(self) -> None:
         # Left-right split.
         for row in range(0, 12):
-            n = row * 3 + 1
-            outcome = Outcome(f"{n}-{n+1} Split", odds.SPLIT)
-            self.temp_bins[n].append(outcome)
-            self.temp_bins[n + 1].append(outcome)
-            outcome = Outcome(f"{n+1}-{n+2} Split", odds.SPLIT)
-            self.temp_bins[n + 1].append(outcome)
-            self.temp_bins[n + 2].append(outcome)
+            num = row * 3 + 1
+            outcome = Outcome(f"{num}-{num + 1} Split", odds.SPLIT)
+            self.temp_bins[num].append(outcome)
+            self.temp_bins[num + 1].append(outcome)
+            outcome = Outcome(f"{num + 1}-{num + 2} Split", odds.SPLIT)
+            self.temp_bins[num + 1].append(outcome)
+            self.temp_bins[num + 2].append(outcome)
 
         # Up-down split.
-        for n in range(1, 34):
-            outcome = Outcome(f"{n}-{n+3} Split", odds.SPLIT)
-            self.temp_bins[n].append(outcome)
-            self.temp_bins[n + 3].append(outcome)
+        for num in range(1, 34):
+            outcome = Outcome(f"{num}-{num + 3} Split", odds.SPLIT)
+            self.temp_bins[num].append(outcome)
+            self.temp_bins[num + 3].append(outcome)
 
     def gen_street_bets(self) -> None:
         for row in range(0, 12):
-            n = row * 3 + 1
-            outcome = Outcome(f"{n}-{n+1}-{n+2} Street", odds.STREET)
-            self.temp_bins[n].append(outcome)
-            self.temp_bins[n + 1].append(outcome)
-            self.temp_bins[n + 2].append(outcome)
+            num = row * 3 + 1
+            outcome = Outcome(f"{num}-{num + 1}-{num + 2} Street", odds.STREET)
+            self.temp_bins[num].append(outcome)
+            self.temp_bins[num + 1].append(outcome)
+            self.temp_bins[num + 2].append(outcome)
 
     def gen_corner_bets(self) -> None:
         for row in range(0, 11):
-            n = row * 3 + 1
+            num = row * 3 + 1
             # Left corner.
-            outcome = Outcome(f"{n}-{n+1}-{n+3}-{n+4} Corner", odds.CORNER)
-            self.temp_bins[n].append(outcome)
-            self.temp_bins[n + 1].append(outcome)
-            self.temp_bins[n + 3].append(outcome)
-            self.temp_bins[n + 4].append(outcome)
+            outcome = Outcome(f"{num}-{num + 1}-{num + 3}-{num + 4} Corner", odds.CORNER)
+            self.temp_bins[num].append(outcome)
+            self.temp_bins[num + 1].append(outcome)
+            self.temp_bins[num + 3].append(outcome)
+            self.temp_bins[num + 4].append(outcome)
             # Right corner.
-            outcome = Outcome(f"{n+1}-{n+2}-{n+4}-{n+5} Corner", odds.CORNER)
-            self.temp_bins[n + 1].append(outcome)
-            self.temp_bins[n + 2].append(outcome)
-            self.temp_bins[n + 4].append(outcome)
-            self.temp_bins[n + 5].append(outcome)
+            outcome = Outcome(f"{num + 1}-{num + 2}-{num + 4}-{num + 5} Corner", odds.CORNER)
+            self.temp_bins[num + 1].append(outcome)
+            self.temp_bins[num + 2].append(outcome)
+            self.temp_bins[num + 4].append(outcome)
+            self.temp_bins[num + 5].append(outcome)
 
     def gen_line_bets(self) -> None:
         for row in range(0, 11):
-            n = row * 3 + 1
-            outcome = Outcome(f"{n}-{n+1}-{n+2}-{n+3}-{n+4}-{n+5} Line", odds.LINE)
-            self.temp_bins[n].append(outcome)
-            self.temp_bins[n + 1].append(outcome)
-            self.temp_bins[n + 2].append(outcome)
-            self.temp_bins[n + 3].append(outcome)
-            self.temp_bins[n + 4].append(outcome)
-            self.temp_bins[n + 5].append(outcome)
+            num = row * 3 + 1
+            outcome = Outcome(f"{num}-{num + 1}-{num + 2}-{num + 3}-{num + 4}-{num + 5} Line", odds.LINE)
+            self.temp_bins[num].append(outcome)
+            self.temp_bins[num + 1].append(outcome)
+            self.temp_bins[num + 2].append(outcome)
+            self.temp_bins[num + 3].append(outcome)
+            self.temp_bins[num + 4].append(outcome)
+            self.temp_bins[num + 5].append(outcome)
 
     def gen_dozen_bets(self) -> None:
         for dozen in range(0, 3):
             outcome = Outcome(f"Dozen {dozen+1}", odds.DOZEN)
-            for n in range(0, 12):
-                self.temp_bins[dozen * 12 + n + 1].append(outcome)
+            for num in range(0, 12):
+                self.temp_bins[dozen * 12 + num + 1].append(outcome)
 
     def gen_column_bets(self) -> None:
         for col in range(0, 3):
@@ -345,24 +345,24 @@ class BinBuilder:
         high_o = Outcome("High", odds.EVEN)
         low_o = Outcome("Low", odds.EVEN)
 
-        for n in range(1, 37):
-            if 1 <= n < 19:
-                self.temp_bins[n].append(low_o)
+        for num in range(1, 37):
+            if 1 <= num < 19:
+                self.temp_bins[num].append(low_o)
             else:
-                self.temp_bins[n].append(high_o)
-            if n % 2 == 0:
-                self.temp_bins[n].append(even_o)
+                self.temp_bins[num].append(high_o)
+            if num % 2 == 0:
+                self.temp_bins[num].append(even_o)
             else:
-                self.temp_bins[n].append(odd_o)
-            if n in {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}:
-                self.temp_bins[n].append(red_o)
+                self.temp_bins[num].append(odd_o)
+            if num in {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}:
+                self.temp_bins[num].append(red_o)
             else:
-                self.temp_bins[n].append(black_o)
+                self.temp_bins[num].append(black_o)
 
     def gen_five_bets(self) -> None:
         outcome = Outcome("Five", odds.FIVE)
-        for n in [0, 37, 1, 2, 3]:
-            self.temp_bins[n].append(outcome)
+        for num in [0, 37, 1, 2, 3]:
+            self.temp_bins[num].append(outcome)
 
 
 class Bet:
@@ -635,8 +635,8 @@ class Martingale(Player):
         """Updates the `Table` object with a bet on 'black'. The amount bet is
         2**`loss_count`, which is the value of `bet_multiple`.
 
-        If `bet_amount` exceeds `table.limit` or `self.stake`, leave the
-        table.
+        If `bet_amount` exceeds `self.stake`, bet entire remaining stake. If
+        `bet_amount` exceeds `table.limit`, restart the betting strategy.
         """
         bet_amount = 1 * (2 ** self.loss_count)
         if bet_amount > self.stake:
@@ -681,11 +681,6 @@ class SevenReds(Martingale):
 
     Attributes:
         table: The `Table` that is used to place individual `Bet` instances.
-        loss_count: The number of losses. This is the number of times to double
-            the bet.
-        bet_multiple: The bet multiplier, based on the number of losses. This
-            starts at 1, and is reset to 1 on each win. It is doubled with each
-            loss. This is always equal to 2**`loss_count`.
         red_count: The number of reds yet to go. Inits to 7, and is reset to 7 on
             each non-red outcome, and decrements by 1 on each red outcome.
     """
@@ -767,7 +762,8 @@ class Player1326(Player):
 
     def place_bets(self) -> None:
         """Updates the `Table` with a bet created by the current state. Delegates
-        `Bet` creation to the `self.state.current_bet` method."""
+        `Bet` creation to the `self.state.current_bet` method.
+        """
         current_bet = self.state.current_bet()
         if current_bet.amount > self.stake:
             current_bet.amount = self.stake
@@ -846,7 +842,8 @@ class Player1326State:
 
 class Player1326NoWins(Player1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
-    for when there are no wins."""
+    for when there are no wins.
+    """
 
     def __init__(self, player: Player1326):
         super(Player1326NoWins, self).__init__(player, Player1326OneWin, 1)
@@ -854,7 +851,8 @@ class Player1326NoWins(Player1326State):
 
 class Player1326OneWin(Player1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
-    for when there is one win."""
+    for when there is one win.
+    """
 
     def __init__(self, player: Player1326):
         super(Player1326OneWin, self).__init__(player, Player1326TwoWins, 3)
@@ -862,7 +860,8 @@ class Player1326OneWin(Player1326State):
 
 class Player1326TwoWins(Player1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
-    for when there are two wins."""
+    for when there are two wins.
+    """
 
     def __init__(self, player: Player1326):
         super(Player1326TwoWins, self).__init__(player, Player1326ThreeWins, 2)
@@ -870,10 +869,87 @@ class Player1326TwoWins(Player1326State):
 
 class Player1326ThreeWins(Player1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
-    for when there are three wins."""
+    for when there are three wins.
+    """
 
     def __init__(self, player: Player1326):
         super(Player1326ThreeWins, self).__init__(player, Player1326NoWins, 6)
+
+
+class PlayerCancellation(Player):
+    """A `Player` who uses the cancellation betting system. This player allocates
+    their available budget into a sequence of bets that have an accelerating potential
+    gain as well as recouping any losses.
+
+    Attributes:
+        sequence: This `List` keeps the bet amounts. Wins are removed from this list
+            and losses are appended to this list. The current bet is the first value
+            plus the last value.
+        outcome: The player's preferred `Outcome` instance to bet on.
+        table: The `Table` object which will accept the bets.
+    """
+
+    sequence: List[int]
+    outcome: Outcome
+
+    def __init__(self, table: Table) -> None:
+        """Uses the `PlayerCancellation.reset_sequence` method to initialise the
+        sequences of numbers used to establish the bet amount. This also picks a
+        suitable even money `Outcome`.
+        """
+        super().__init__(table)
+        self.sequence = []
+        self.outcome = self.table.wheel.get_outcome("Black")
+
+    def reset(self, duration, stake):
+        """Sets `stake`, `rounds_to_go` and `sequence` back to their initial values."""
+        super(PlayerCancellation, self).reset(duration, stake)
+        self.reset_sequence()
+
+    def reset_sequence(self):
+        """Puts the initial sequence of 6 values into the `self.sequence` attribute."""
+        self.sequence = [1, 2, 3, 4, 5, 6]
+
+    def place_bets(self) -> None:
+        """Creates a bet from the sum of the first and last values of `self.sequence`
+        and the preferred outcome.
+
+        Reset the sequence once we have completed the betting strategy and
+        `self.sequence` is empty. Stop playing if a bet exceeds `table.limit`.
+        """
+        if len(self.sequence) > 1:
+            current_bet = Bet(self.sequence[0] + self.sequence[-1], self.outcome)
+            if current_bet.amount > self.stake:
+                current_bet.amount = self.stake
+            try:
+                self.table.place_bet(current_bet)
+            except InvalidBet:
+                self.rounds_to_go = 0
+                return
+            self.stake -= current_bet.amount
+        else:
+            self.reset_sequence()
+
+    def win(self, bet: Bet) -> None:
+        """Uses the superclass method to update the stake with an amount won. It
+        then removes the first and last element from `self.sequence`.
+
+        Args:
+            bet: The `Bet` which won.
+        """
+        super(PlayerCancellation, self).win(bet)
+        self.sequence = self.sequence[1:-1]
+
+    def lose(self, bet: Bet) -> None:
+        """Uses the superclass method to update the stake with an amount lose. It
+        then appends the sum of the first and last elements of `self.sequence` to
+        the end of `self.sequence`.
+
+        Args:
+            bet: The `Bet` which lost.
+        """
+        super(PlayerCancellation, self).lose(bet)
+        self.sequence.append(self.sequence[0] + self.sequence[-1])
 
 
 class Game:
@@ -1002,10 +1078,10 @@ class IntegerStatistics(typing.List[int]):
         return math.sqrt(sum((x - m) ** 2 for x in self) / (len(self) - 1))
 
 
-if __name__ == "__main__":
+def main():
     table = Table()
     game = Game(table, table.wheel)
-    player = Player1326(table)
+    player = PlayerCancellation(table)
     sim = Simulator(game, player)
     sim.gather()
 
@@ -1025,3 +1101,7 @@ if __name__ == "__main__":
         f"{sim.maxima.stdev():>15.2f}"
         f"{sim.end_stakes.stdev():>15.2f}"
     )
+
+
+if __name__ == "__main__":
+    main()
