@@ -302,13 +302,17 @@ class BinBuilder:
         for row in range(0, 11):
             num = row * 3 + 1
             # Left corner.
-            outcome = Outcome(f"{num}-{num + 1}-{num + 3}-{num + 4} Corner", odds.CORNER)
+            outcome = Outcome(
+                f"{num}-{num + 1}-{num + 3}-{num + 4} Corner", odds.CORNER
+            )
             self.temp_bins[num].append(outcome)
             self.temp_bins[num + 1].append(outcome)
             self.temp_bins[num + 3].append(outcome)
             self.temp_bins[num + 4].append(outcome)
             # Right corner.
-            outcome = Outcome(f"{num + 1}-{num + 2}-{num + 4}-{num + 5} Corner", odds.CORNER)
+            outcome = Outcome(
+                f"{num + 1}-{num + 2}-{num + 4}-{num + 5} Corner", odds.CORNER
+            )
             self.temp_bins[num + 1].append(outcome)
             self.temp_bins[num + 2].append(outcome)
             self.temp_bins[num + 4].append(outcome)
@@ -317,7 +321,10 @@ class BinBuilder:
     def gen_line_bets(self) -> None:
         for row in range(0, 11):
             num = row * 3 + 1
-            outcome = Outcome(f"{num}-{num + 1}-{num + 2}-{num + 3}-{num + 4}-{num + 5} Line", odds.LINE)
+            outcome = Outcome(
+                f"{num}-{num + 1}-{num + 2}-{num + 3}-{num + 4}-{num + 5} Line",
+                odds.LINE,
+            )
             self.temp_bins[num].append(outcome)
             self.temp_bins[num + 1].append(outcome)
             self.temp_bins[num + 2].append(outcome)
@@ -354,7 +361,26 @@ class BinBuilder:
                 self.temp_bins[num].append(even_o)
             else:
                 self.temp_bins[num].append(odd_o)
-            if num in {1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36}:
+            if num in {
+                1,
+                3,
+                5,
+                7,
+                9,
+                12,
+                14,
+                16,
+                18,
+                19,
+                21,
+                23,
+                25,
+                27,
+                30,
+                32,
+                34,
+                36,
+            }:
                 self.temp_bins[num].append(red_o)
             else:
                 self.temp_bins[num].append(black_o)
