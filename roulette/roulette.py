@@ -978,6 +978,70 @@ class PlayerCancellation(Player):
         self.sequence.append(self.sequence[0] + self.sequence[-1])
 
 
+class PlayerFibonacci(Player):
+    """A `Player` who uses the Fibonacci betting system. This player allocates
+    their available budget into a sequence of bets that have an accelerating
+    potential gain.
+
+    Attributes:
+        recent: The most recent bet amount. Initially set to 1.
+        previous: The bet amount previous to the most recent bet. Initially set
+            to 0.
+        table: The `Table` object which will accept the bets.
+    """
+
+    recent: int
+    previous: int
+
+    def __init__(self, table: Table) -> None:
+        """Initialise the Fibonacci player."""
+        super().__init__(table)
+        self.recent = 1
+        self.previous = 0
+
+    def reset(self, duration: int, stake: int) -> None:
+        super(PlayerFibonacci, self).reset(duration, stake)
+        self.reset_bet_state()
+
+    def reset_bet_state(self):
+        """Reset `recent` and `previous` to their initial state."""
+        self.recent, self.previous = 1, 0
+
+    def place_bets(self) -> None:
+        """Create and place a `Bet` of a value according to `recent` + `previous`."""
+        current_bet = Bet(self.recent, self.table.wheel.get_outcome("Black"))
+        if current_bet.amount > self.stake:
+            current_bet.amount = self.stake
+        try:
+            self.table.place_bet(current_bet)
+        except InvalidBet:
+            self.rounds_to_go = 0
+            return
+        self.stake -= current_bet.amount
+
+    def win(self, bet: Bet) -> None:
+        """Users the superclass method to update the stake with an amount won.
+        It also resets the betting system state.
+
+        Args:
+            bet: The `Bet` which won.
+        """
+        super(PlayerFibonacci, self).win(bet)
+        self.reset_bet_state()
+
+    def lose(self, bet: Bet) -> None:
+        """Updates `recent` and `previous` to their values for the next step in
+        the betting strategy.
+
+        Args:
+            bet: The `Bet` which lost.
+        """
+        super(PlayerFibonacci, self).lose(bet)
+        next_ = self.recent + self.previous
+        self.previous = self.recent
+        self.recent = next_
+
+
 class Game:
     """`Game` manages the sequence of actions that defines the game of Roulette.
 
@@ -1107,7 +1171,7 @@ class IntegerStatistics(typing.List[int]):
 def main():
     table = Table()
     game = Game(table, table.wheel)
-    player = PlayerCancellation(table)
+    player = PlayerFibonacci(table)
     sim = Simulator(game, player)
     sim.gather()
 

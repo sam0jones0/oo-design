@@ -17,7 +17,7 @@ def test_game(seeded_wheel):
     wheel = seeded_wheel
     table = Table()
     table.wheel = wheel
-    player = Passenger57(table)  # Always bets 10 on black.
+    player = Passenger57(table)  # Always bets 1 on black.
     player.reset(20, 100)
     game = Game(table, wheel)
 
