@@ -1,0 +1,8 @@
+player,duration_mean,duration_stdev,maxima_mean,maxima_stdev,end_stake_mean,end_stake_stdev
+Martingale,10.1,1.1,10.1,1.1,10.1,1.1
+Passenger57,10.1,1.1,10.1,1.1,10.1,1.1
+Player1326,10.1,1.1,10.1,1.1,10.1,1.1
+PlayerCancellation,10.1,1.1,10.1,1.1,10.1,1.1
+PlayerFibonacci,10.1,1.1,10.1,1.1,10.1,1.1
+PlayerRandom,10.1,1.1,10.1,1.1,10.1,1.1
+SevenReds,10.1,1.1,10.1,1.1,10.1,1.1

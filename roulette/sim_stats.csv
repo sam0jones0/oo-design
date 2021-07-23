@@ -1,0 +1,8 @@
+player,duration_mean,duration_stdev,maxima_mean,maxima_stdev,end_stake_mean,end_stake_stdev
+Player1326,249.17,6.24,118.52,18.98,75.17,36.77
+Passenger57,250.0,0.0,106.48,6.35,87.38,14.7
+PlayerFibonacci,183.51,83.11,116.1,12.12,82.86,32.62
+SevenReds,250.0,0.0,100.34,0.61,99.9,1.16
+PlayerCancellation,42.65,34.63,162.09,68.26,78.16,75.65
+PlayerRandom,241.27,26.05,143.42,42.49,88.1,65.24
+Martingale,213.1,63.22,133.83,27.35,70.06,61.4

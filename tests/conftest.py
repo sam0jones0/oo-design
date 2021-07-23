@@ -179,3 +179,36 @@ class MockPlayer:
 @pytest.fixture
 def mock_player():
     return MockPlayer
+
+
+class MockGame:
+    def __init__(self):
+        self.table = MockTable()
+
+
+@pytest.fixture
+def mock_game():
+    return MockGame
+
+
+class MockSimulator:
+    def __init__(self, *args, **kwargs):
+        self.durations = MockIntegerStatistics()
+        self.maxima = MockIntegerStatistics()
+        self.end_stakes = MockIntegerStatistics()
+
+    def gather(self):
+        return
+
+
+@pytest.fixture
+def mock_simulator():
+    return MockSimulator
+
+
+class MockIntegerStatistics:
+    def mean(self):
+        return 10.1
+
+    def stdev(self):
+        return 1.1

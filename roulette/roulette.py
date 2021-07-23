@@ -1,6 +1,7 @@
 """
 TODO
 """
+import csv
 import math
 import random
 import typing
@@ -1099,7 +1100,7 @@ class Simulator:
         player: The `Player` instance. This encapsulates the betting strategy we
             are simulating.
         game: The casino game we are simulating. This is an instance of the `Game`
-            class, which embodies teh various rules, the `Table` object and the
+            class, which embodies the various rules, the `Table` object and the
             `Wheel` instance.
     """
 
@@ -1160,20 +1161,101 @@ class IntegerStatistics(typing.List[int]):
 
     def mean(self) -> float:
         """Computes the mean of the `List` of values."""
-        return sum(self) / len(self)
+        return round(sum(self) / len(self), 2)
 
     def stdev(self) -> float:
         """Computes the standard deviation of the `List` of values."""
         m = self.mean()
-        return math.sqrt(sum((x - m) ** 2 for x in self) / (len(self) - 1))
+        return round(math.sqrt(sum((x - m) ** 2 for x in self) / (len(self) - 1)), 2)
 
 
-def main():
-    table = Table()
-    game = Game(table, table.wheel)
-    player = PlayerFibonacci(table)
-    sim = Simulator(game, player)
-    sim.gather()
+class BulkSimulator:
+    """Executes a `Simulator` instance for each `Player` subclass and writes metrics
+    to a CSV file.
+
+    Attributes:
+        game: The casino game we are simulating. This is an instance of the `Game`
+            class, which embodies the various rules, the `Table` object and the
+            `Wheel` instance.
+        players: A `List` of all `Player` subclasses.
+        player_stats: A `list` of `dict`'s containing the stats for each player's
+            `Simulator` run.
+    """
+
+    players: List[Type[Player]]
+    player_stats: List[Dict]
+
+    def __init__(self, game: Game) -> None:
+        """Initialise `BulkSimulator` with the `game` we are simulating and gather
+        all the player objects into self.players."""
+        self.game = game
+        self.players = self.get_all_players()
+        self.player_stats = []
+
+    def get_all_players(self) -> List[Type[Player]]:
+        """Recursively gathers the subclasses of ``cls``.
+
+        Returns:
+            A `list` containing each subclass object of ``cls`` and any subclasses
+                of their subclasses.
+        """
+        all_players = set()
+        for sub_cls in Player.__subclasses__():
+            all_players.add(sub_cls)
+            for sub_cls_sub in sub_cls.__subclasses__():
+                all_players.add(sub_cls_sub)
+
+        # Ensure players are always in the same order for csv row order
+        #  consistency and ease of testing.
+        all_players_list = list(all_players)
+        all_players_list.sort(key=lambda x: x.__name__)
+        return all_players_list
+
+    def gather_all(self) -> None:
+        """Behaves similarly to `Simulator.gather` but gathers statistics for every
+        `Player` subclass and adds them as a `dict` to `self.player_stats`.
+        """
+        for player in self.players:
+            p = player(self.game.table)
+            p_sim = Simulator(self.game, p)
+            p_sim.gather()
+            self.player_stats.append(
+                {
+                    "player": p.__class__.__name__,
+                    "duration_mean": p_sim.durations.mean(),
+                    "duration_stdev": p_sim.durations.stdev(),
+                    "maxima_mean": p_sim.maxima.mean(),
+                    "maxima_stdev": p_sim.maxima.stdev(),
+                    "end_stake_mean": p_sim.end_stakes.mean(),
+                    "end_stake_stdev": p_sim.end_stakes.stdev(),
+                }
+            )
+
+    def save_to_csv(self, file_path) -> None:
+        """Saves stats gathered with `self.gather_all` to a CSV file located in
+        the current working directory.
+
+        Args:
+            file_path: The path to save the csv. E.g. "stats.csv" or
+                "C:\\Users\\Me\\stats.csv" or "./data/stats.csv"
+        """
+        with open(file_path, "w", newline="") as csv_file:
+            fieldnames = [field for field in self.player_stats[0].keys()]
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(self.player_stats)
+
+
+def print_sim_results(sim: Simulator) -> None:
+    """Print the results from a single `Simulator` instance after it is populated
+    with statistics from running its `gather` method.
+
+    Args:
+        sim: A `Simulator` instance which has gathered statistics to be printed.
+    """
+
+    if not sim.durations:
+        sim.gather()
 
     print(f"{'n':5s}{'Duration':>15s}{'Maxima':>15s}{'End Stake':>15s}\n{'-'*50}")
     for n, duration, maxima, end in zip(
@@ -1191,6 +1273,19 @@ def main():
         f"{sim.maxima.stdev():>15.2f}"
         f"{sim.end_stakes.stdev():>15.2f}"
     )
+
+
+def main():
+    table = Table()
+    game = Game(table, table.wheel)
+    # # To run a simulation for just one player and print the results:
+    # player = PlayerFibonacci(table)
+    # sim = Simulator(game, player)
+    # sim.gather()
+    # print_sim_results(sim)
+    bulk_sim = BulkSimulator(game)
+    bulk_sim.gather_all()
+    bulk_sim.save_to_csv("sim_stats.csv")
 
 
 if __name__ == "__main__":
