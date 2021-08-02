@@ -5,9 +5,8 @@ selected `temp_bins` collections are tested which covers most cases.
 import pytest
 
 import casino
-from casino import roulette_odds as odds
-from casino.roulette import Outcome
-from tests.conftest import MockWheel, MockOutcome
+from casino.roulette import Outcome, odds
+from casino.roulette.tests.conftest import MockWheel, MockOutcome
 
 
 @pytest.mark.usefixtures("patched_builder")

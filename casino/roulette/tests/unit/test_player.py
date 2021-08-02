@@ -4,7 +4,7 @@ import pytest
 
 import casino.roulette
 from casino.roulette import Player
-from tests.conftest import MockTable
+from casino.roulette.tests.conftest import MockTable
 
 
 def test_player(monkeypatch, mock_table, mock_bet):
