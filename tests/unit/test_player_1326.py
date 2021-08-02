@@ -2,8 +2,8 @@
 
 import pytest
 
-import roulette
-from roulette.roulette import (
+import casino.roulette
+from casino.roulette import (
     Player1326,
     Player1326NoWins,
     Player1326OneWin,
@@ -13,9 +13,9 @@ from roulette.roulette import (
 
 
 def test_player_1326(monkeypatch, mock_bet, mock_table):
-    monkeypatch.setattr(roulette.roulette, "Table", mock_table)
-    monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
-    table = roulette.roulette.Table()
+    monkeypatch.setattr(casino.roulette, "Table", mock_table)
+    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
+    table = casino.roulette.Table()
     player = Player1326(table)
     assert not player.playing()
     player.reset(250, 100)

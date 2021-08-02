@@ -3,14 +3,14 @@ import random
 
 import pytest
 
-import roulette
-from roulette.roulette import PlayerRandom
+import casino.roulette
+from casino.roulette import PlayerRandom
 
 
 def test_martingale(monkeypatch, mock_table, mock_bet):
-    monkeypatch.setattr(roulette.roulette, "Table", mock_table)
-    monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
-    table = roulette.roulette.Table()
+    monkeypatch.setattr(casino.roulette, "Table", mock_table)
+    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
+    table = casino.roulette.Table()
     player = PlayerRandom(table)
     player.rng = random.Random()
     player.rng.seed(1)

@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from roulette.roulette import Wheel
+from casino.roulette import Wheel
 
 
 @pytest.mark.usefixtures("do_not_build_bins")

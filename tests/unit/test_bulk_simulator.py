@@ -4,12 +4,12 @@ from pathlib import Path
 
 import pytest
 
-import roulette
-from roulette.roulette import BulkSimulator
+import casino
+from casino.roulette import BulkSimulator
 
 
 def test_bulk_simulator(monkeypatch, tmpdir, mock_game, mock_simulator):
-    monkeypatch.setattr(roulette.roulette, "Simulator", mock_simulator)
+    monkeypatch.setattr(casino.roulette, "Simulator", mock_simulator)
     game = mock_game()
     b_sim = BulkSimulator(game)
     b_sim.gather_all()

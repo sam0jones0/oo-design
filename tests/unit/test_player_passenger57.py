@@ -2,15 +2,15 @@
 
 import pytest
 
-import roulette
-from roulette.roulette import Passenger57
+import casino.roulette
+from casino.roulette import Passenger57
 from tests.conftest import MockOutcome
 
 
 def test_passenger57(monkeypatch, mock_table, mock_bet):
-    monkeypatch.setattr(roulette.roulette, "Table", mock_table)
-    monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
-    table = roulette.roulette.Table()
+    monkeypatch.setattr(casino.roulette, "Table", mock_table)
+    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
+    table = casino.roulette.Table()
     player = Passenger57(table)
     assert isinstance(player.black, MockOutcome)
     player.reset(250, 100)

@@ -2,14 +2,14 @@
 
 import pytest
 
-import roulette
-from roulette.roulette import PlayerCancellation
+import casino.roulette
+from casino.roulette import PlayerCancellation
 
 
 def test_player_cancellation(monkeypatch, mock_bet, mock_table):
-    monkeypatch.setattr(roulette.roulette, "Table", mock_table)
-    monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
-    table = roulette.roulette.Table()
+    monkeypatch.setattr(casino.roulette, "Table", mock_table)
+    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
+    table = casino.roulette.Table()
     player = PlayerCancellation(table)
     assert not player.playing()
     player.reset(250, 500)

@@ -17,10 +17,10 @@ from typing import (
 
 if __package__ is None or __package__ == "":
     # Use current directory visibility when not running as a package.
-    import odds
+    import roulette_odds as odds
 else:
     # Use current package visibility when running as a package or with pytest.
-    from . import odds
+    from . import roulette_odds as odds
 
 
 class Outcome:

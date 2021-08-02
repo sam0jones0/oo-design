@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from roulette.roulette import Outcome
+from casino.roulette import Outcome
 
 
 def test_outcome():

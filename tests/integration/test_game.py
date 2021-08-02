@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from roulette.roulette import BinBuilder, Game, Passenger57, Table
+from casino.roulette import BinBuilder, Game, Passenger57, Table
 
 
 def test_game(seeded_wheel):

@@ -2,7 +2,7 @@
 
 import pytest
 
-from roulette.roulette import Bet, Outcome
+from casino.roulette import Bet, Outcome
 
 
 def test_bet():

@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from roulette.roulette import InvalidBet
+from casino.roulette import InvalidBet
 
 
 def test_invalid_bet():

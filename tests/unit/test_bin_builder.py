@@ -4,17 +4,17 @@ selected `temp_bins` collections are tested which covers most cases.
 
 import pytest
 
-import roulette
-from roulette import odds
-from roulette.roulette import Outcome
+import casino
+from casino import roulette_odds as odds
+from casino.roulette import Outcome
 from tests.conftest import MockWheel, MockOutcome
 
 
 @pytest.mark.usefixtures("patched_builder")
 class TestBinBuilder:
     def test_using_monkeypatched_fixtures(self, patched_builder):
-        wheel = roulette.roulette.Wheel()
-        outcome = roulette.roulette.Outcome("black", 1)
+        wheel = casino.roulette.Wheel()
+        outcome = casino.roulette.Outcome("black", 1)
         assert isinstance(wheel, MockWheel)
         assert isinstance(outcome, MockOutcome)
 

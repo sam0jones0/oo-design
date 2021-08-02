@@ -2,14 +2,14 @@
 
 import pytest
 
-import roulette
-from roulette.roulette import PlayerFibonacci
+import casino.roulette
+from casino.roulette import PlayerFibonacci
 
 
 def test_player_fibonacci(monkeypatch, mock_table, mock_bet):
-    monkeypatch.setattr(roulette.roulette, "Table", mock_table)
-    monkeypatch.setattr(roulette.roulette, "Bet", mock_bet)
-    table = roulette.roulette.Table()
+    monkeypatch.setattr(casino.roulette, "Table", mock_table)
+    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
+    table = casino.roulette.Table()
     player = PlayerFibonacci(table)
     player.reset(250, 100)
 
