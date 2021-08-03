@@ -2,7 +2,7 @@
 
 import pytest
 
-from casino.roulette import IntegerStatistics
+from casino.main import IntegerStatistics
 
 
 def test_integer_statistics():

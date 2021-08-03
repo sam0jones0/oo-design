@@ -2,14 +2,14 @@
 
 import pytest
 
-import casino.roulette
-from casino.roulette import Player
-from casino.roulette.tests.conftest import MockTable
+import casino.main
+from casino.main import Player
+from tests.conftest import MockTable
 
 
 def test_player(monkeypatch, mock_table, mock_bet):
-    monkeypatch.setattr(casino.roulette, "Table", mock_table)
-    table = casino.roulette.Table()
+    monkeypatch.setattr(casino.main, "Table", mock_table)
+    table = casino.main.Table()
     player = Player(table)
 
     assert isinstance(player.table, MockTable)

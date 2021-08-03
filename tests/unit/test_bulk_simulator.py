@@ -5,11 +5,11 @@ from pathlib import Path
 import pytest
 
 import casino
-from casino.roulette import BulkSimulator
+from casino.main import BulkSimulator
 
 
 def test_bulk_simulator(monkeypatch, tmpdir, mock_game, mock_simulator):
-    monkeypatch.setattr(casino.roulette, "Simulator", mock_simulator)
+    monkeypatch.setattr(casino.main, "Simulator", mock_simulator)
     game = mock_game()
     b_sim = BulkSimulator(game)
     b_sim.gather_all()

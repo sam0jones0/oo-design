@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from casino.roulette import Bin, Outcome
+from casino.main import Bin, Outcome
 
 
 def test_bin_construction():

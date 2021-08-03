@@ -2,14 +2,14 @@
 
 import pytest
 
-import casino.roulette
-from casino.roulette import SevenReds
+import casino.main
+from casino.main import SevenReds
 
 
 def test_sevenreds(monkeypatch, mock_table, mock_bet, mock_outcome):
-    monkeypatch.setattr(casino.roulette, "Table", mock_table)
-    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
-    table = casino.roulette.Table()
+    monkeypatch.setattr(casino.main, "Table", mock_table)
+    monkeypatch.setattr(casino.main, "Bet", mock_bet)
+    table = casino.main.Table()
     player = SevenReds(table)
     player.reset(250, 100)
 

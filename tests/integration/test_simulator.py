@@ -2,7 +2,7 @@
 
 import pytest
 
-from casino.roulette import Table, Passenger57, Game, Simulator
+from casino.main import Table, Passenger57, Game, Simulator
 
 
 def test_simulator(seeded_wheel):

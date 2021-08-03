@@ -4,7 +4,7 @@ import pytest
 import random
 
 import casino
-from casino.roulette import BinBuilder, Wheel
+from casino.main import BinBuilder, Wheel
 
 
 # Hack for broader scope monkeypatch:
@@ -19,7 +19,7 @@ def monkey_module(request):
 
 @pytest.fixture(scope="module")
 def patched_wheel(monkey_module):
-    monkey_module.setattr(casino.roulette, "Wheel", MockWheel)
+    monkey_module.setattr(casino.main, "Wheel", MockWheel)
 
 
 class MockWheel:
@@ -67,8 +67,8 @@ def wheel_with_outcomes(mock_outcomes):
 
 @pytest.fixture(scope="module")
 def patched_builder(monkey_module):
-    monkey_module.setattr(casino.roulette, "Outcome", MockOutcome)
-    monkey_module.setattr(casino.roulette, "Wheel", MockWheel)
+    monkey_module.setattr(casino.main, "Outcome", MockOutcome)
+    monkey_module.setattr(casino.main, "Wheel", MockWheel)
     wheel = Wheel()
 
     return wheel.bin_builder
@@ -81,7 +81,7 @@ class MockBuilder:
 
 @pytest.fixture(scope="module")
 def do_not_build_bins(monkey_module):
-    monkey_module.setattr(casino.roulette, "BinBuilder", MockBuilder)
+    monkey_module.setattr(casino.main, "BinBuilder", MockBuilder)
 
 
 class MockOutcome:

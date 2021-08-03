@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from casino.roulette import Table, InvalidBet
+from casino.main import Table, InvalidBet
 
 
 @pytest.mark.usefixtures("patched_wheel")

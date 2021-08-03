@@ -2,8 +2,8 @@
 
 import pytest
 
-import casino.roulette
-from casino.roulette import (
+import casino.main
+from casino.main import (
     Player1326State,
     Player1326NoWins,
     Player1326OneWin,
@@ -13,7 +13,7 @@ from casino.roulette import (
 
 
 def test_player1326state(monkeypatch, mock_bet, mock_player):
-    monkeypatch.setattr(casino.roulette, "Bet", mock_bet)
+    monkeypatch.setattr(casino.main, "Bet", mock_bet)
     player = mock_player()
     state = Player1326NoWins(player)
     bet = state.current_bet()
