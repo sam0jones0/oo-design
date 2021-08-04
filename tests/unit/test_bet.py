@@ -17,6 +17,6 @@ def test_bet():
     assert b2.win_amount() == 5
 
     assert str(b1) == "1 on foo 1:1"
-    assert repr(b1) == "Bet(amount=1, outcome=Outcome(name='foo', odds=1))"
+    assert repr(b1) == "Bet(amount=1, outcome=Outcome(name='foo', odds=Fraction(1, 1)))"
     assert str(b2) == "1 on bar 4:1"
-    assert repr(b2) == "Bet(amount=1, outcome=Outcome(name='bar', odds=4))"
+    assert repr(b2) == "Bet(amount=1, outcome=Outcome(name='bar', odds=Fraction(4, 1)))"

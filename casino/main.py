@@ -5,6 +5,7 @@ import csv
 import math
 import random
 import typing
+from fractions import Fraction
 from typing import (
     Tuple,
     FrozenSet,
@@ -13,6 +14,7 @@ from typing import (
     Dict,
     List,
     Type,
+    Union,
 )
 
 if __package__ is None or __package__ == "":
@@ -39,15 +41,21 @@ class Outcome:
     Attributes:
         name: The name of this `Outcome`. E.g. ``1``, ``Red``, ``Even`` or ``Low``.
         outcome_odds: The payout odds of this outcome. Most odds are stated as 1:1 or
-            17:1, we only keep the numerator (17) and assume the denominator is 1.
+            17:1. Either the numerator (17) is provided and the denominator is
+            assumed to be 1, or an exact `Fraction` object of the odds is provided.
     """
 
-    def __init__(self, name: str, outcome_odds: int) -> None:
-        """Sets the instance `name` and `odds` from the parameter `name` and
-        `odds`.
+    def __init__(self, name: str, outcome_odds: Union[Fraction, int]) -> None:
+        """Sets the instance `name` and `odds` from the parameters. An appropriate
+         `Fraction` to represent the odds is created.
         """
         self.name = name
-        self.odds = outcome_odds
+        if isinstance(outcome_odds, int):
+            self.odds = Fraction(outcome_odds, 1)
+        elif isinstance(outcome_odds, Fraction):
+            self.odds = outcome_odds
+        else:
+            raise TypeError("outcome_odds must be either an int or Fraction.")
 
     def win_amount(self, amount: int) -> int:
         """Multiplies this `Outcome`'s odds by the given ``amount`` and returns
@@ -57,9 +65,9 @@ class Outcome:
             amount: The amount being bet.
 
         Returns:
-            The amount in winnings excluding the initial bet.
+            The amount in winnings as an `int` excluding the initial bet.
         """
-        return self.odds * amount
+        return int(self.odds * amount)
 
     def __eq__(self, other: object) -> bool:
         """Compares the `name` attributes of `self` and ``other``.
@@ -96,7 +104,7 @@ class Outcome:
         return hash(self.name)
 
     def __str__(self) -> str:
-        return f"{self.name} {self.odds}:1"
+        return f"{self.name} {self.odds.numerator}:{self.odds.denominator}"
 
     def __repr__(self) -> str:
         return (
@@ -397,8 +405,6 @@ class Bet:
 
     Maintains an association between an amount wagered, an `Outcome` object, and
     the specific `Player` who made the `Bet`.
-
-    TODO: Associate with the specific `Player` making the `Bet`.
 
     Attributes:
         amount: The amount of the bet.
