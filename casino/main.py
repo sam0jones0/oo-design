@@ -47,7 +47,7 @@ class Outcome:
 
     def __init__(self, name: str, outcome_odds: Union[Fraction, int]) -> None:
         """Sets the instance `name` and `odds` from the parameters. An appropriate
-         `Fraction` to represent the odds is created.
+        `Fraction` to represent the odds is created.
         """
         self.name = name
         if isinstance(outcome_odds, int):
@@ -149,6 +149,177 @@ class Bin:
 
     def __contains__(self, item: Outcome) -> bool:
         return item in self.outcomes
+
+
+class Throw:
+    """The `Throw` class is the superclass for the various throws of the dice.
+
+    Each subclass is a different grouping of the numbers, based on the rules for
+    Craps.
+
+    Attributes:
+        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
+            These bets are immediately resolved as winners.
+        d1: One of the two die values, from 1 to 6.
+        d2: The other of the two die values, from 1 to 6.
+    """
+
+    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+        """Creates this throw, and associates the given `Outcome` instances that
+        are winning propositions.
+        """
+        self.d1 = d1
+        self.d2 = d2
+        self.outcomes = frozenset(outcomes)
+
+    def hard(self) -> bool:
+        """Returns `True` if d1 is equal to d2. Helps to determine if hardways bets
+        have been won or lost.
+        """
+        return self.d1 == self.d2
+
+    def update_game(self, game: CrapsGame) -> None:
+        """Calls one of the `CrapsGame` state change methods: craps(), natural(),
+        eleven() or point(). This may change the game state and resolve bets.
+
+        Args:
+            game: The `CrapsGame` object to be updated based on this throw.
+        """
+        raise NotImplementedError
+
+    def __str__(self) -> str:
+        return f"{self.d1}, {self.d2}"
+
+
+class NaturalThrow(Throw):
+    """`Throw` subclass for the 'natural' number, 7.
+
+    Attributes:
+        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
+            These bets are immediately resolved as winners.
+        d1: One of the two die values, from 1 to 6.
+        d2: The other of the two die values, from 1 to 6.
+    """
+
+    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+        """Creates this `Throw` instance providing the constraint d1 + d2 == 7 is
+        satisfied.
+        """
+        if d1 + d2 != 7:
+            raise ValueError("d1 + d2 must == 7 to init a NaturalThrow.")
+
+        super(NaturalThrow, self).__init__(d1, d2, *outcomes)
+
+    def hard(self) -> bool:
+        """A natural 7 is odd, and can never be made hardways. Always returns `False`."""
+        return False
+
+    def update_game(self, game: CrapsGame) -> None:
+        """Calls the natural() method of a `CrapsGame`. This may change the game
+        state and resolve bets.
+
+        Args:
+            game: The `CrapsGame` to be updated based on this throw.
+        """
+        game.natural()
+
+
+class CrapsThrow(Throw):
+    """`Throw` subclass for the 'craps' numbers: 2, 3 and 12.
+
+    Attributes:
+        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
+            These bets are immediately resolved as winners.
+        d1: One of the two die values, from 1 to 6.
+        d2: The other of the two die values, from 1 to 6.
+    """
+
+    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+        """Creates this `Throw` instance providing the constraint d1 + d2 in {2, 3, 12}
+        is satisfied.
+        """
+        if d1 + d2 not in {2, 3, 12}:
+            raise ValueError("d1 + d2 must be in {2, 3, 12} to init a CrapsThrow.")
+
+        super(CrapsThrow, self).__init__(d1, d2, *outcomes)
+
+    def hard(self) -> bool:
+        """Craps numbers are never part of hardways bets. Always returns `False`."""
+        return False
+
+    def update_game(self, game: CrapsGame) -> None:
+        """Calls the craps() method of a `CrapsGame` instance. This may change the
+        game state and resolve bets.
+
+        Args:
+            game: The `CrapsGame` to be updated based on this throw.
+        """
+        game.craps()
+
+
+class ElevenThrow(Throw):
+    """`Throw` subclass for the number 11.
+
+    This special throw has one effect on a come-out roll and a different effect
+    on point rolls.
+
+    Attributes:
+        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
+            These bets are immediately resolved as winners.
+        d1: One of the two die values, from 1 to 6.
+        d2: The other of the two die values, from 1 to 6.
+    """
+
+    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+        """Creates this `Throw` instance providing the constraint d1 + d2 == 11
+        is satisfied."""
+        if d1 + d2 != 11:
+            raise ValueError("d1 + d2 must == 11 to init an ElevenThrow.")
+
+        super(ElevenThrow, self).__init__(d1, d2, *outcomes)
+
+    def hard(self) -> bool:
+        """Eleven is odd and is never part of hardways bets. Always returns `False`."""
+        return False
+
+    def update_game(self, game: CrapsGame) -> None:
+        """Calls the eleven() method of a `CrapsGame` instance. This may change the
+        game state and resolve bets.
+
+        Args:
+            game: The `CrapsGame` to be updated based on this throw.
+        """
+        game.eleven()
+
+
+class PointThrow(Throw):
+    """`Throw` subclass for the point numbers: 4, 5, 6, 8, 9 and 10.
+
+    Attributes:
+        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
+            These bets are immediately resolved as winners.
+        d1: One of the two die values, from 1 to 6.
+        d2: The other of the two die values, from 1 to 6.
+    """
+
+    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+        """Creates this `Throw` instance providing the constraint d1 + d2 in
+        {4, 5, 6, 8, 9, 10} is satisfied."""
+        if d1 + d2 not in {4, 5, 6, 8, 9, 10}:
+            raise ValueError(
+                "d1 + d2 must be in {4, 5, 6, 8, 9, 10} to init a PointThrow."
+            )
+
+        super(PointThrow, self).__init__(d1, d2, *outcomes)
+
+    def update_game(self, game: CrapsGame) -> None:
+        """Calls the point() method of a `CrapsGame` instance. This may change the
+        game state and resolve bets.
+
+        Args:
+            game: The `CrapsGame` to be updated based on this throw.
+        """
+        game.point()
 
 
 class Wheel:
