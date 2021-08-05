@@ -178,7 +178,7 @@ class Throw:
         """
         return self.d1 == self.d2
 
-    def update_game(self, game: CrapsGame) -> None:
+    def update_game(self, game: "CrapsGame") -> None:
         """Calls one of the `CrapsGame` state change methods: craps(), natural(),
         eleven() or point(). This may change the game state and resolve bets.
 
@@ -214,7 +214,7 @@ class NaturalThrow(Throw):
         """A natural 7 is odd, and can never be made hardways. Always returns `False`."""
         return False
 
-    def update_game(self, game: CrapsGame) -> None:
+    def update_game(self, game: "CrapsGame") -> None:
         """Calls the natural() method of a `CrapsGame`. This may change the game
         state and resolve bets.
 
@@ -247,7 +247,7 @@ class CrapsThrow(Throw):
         """Craps numbers are never part of hardways bets. Always returns `False`."""
         return False
 
-    def update_game(self, game: CrapsGame) -> None:
+    def update_game(self, game: "CrapsGame") -> None:
         """Calls the craps() method of a `CrapsGame` instance. This may change the
         game state and resolve bets.
 
@@ -282,7 +282,7 @@ class ElevenThrow(Throw):
         """Eleven is odd and is never part of hardways bets. Always returns `False`."""
         return False
 
-    def update_game(self, game: CrapsGame) -> None:
+    def update_game(self, game: "CrapsGame") -> None:
         """Calls the eleven() method of a `CrapsGame` instance. This may change the
         game state and resolve bets.
 
@@ -312,7 +312,7 @@ class PointThrow(Throw):
 
         super(PointThrow, self).__init__(d1, d2, *outcomes)
 
-    def update_game(self, game: CrapsGame) -> None:
+    def update_game(self, game: "CrapsGame") -> None:
         """Calls the point() method of a `CrapsGame` instance. This may change the
         game state and resolve bets.
 
@@ -320,6 +320,99 @@ class PointThrow(Throw):
             game: The `CrapsGame` to be updated based on this throw.
         """
         game.point()
+
+
+class CrapsGame:
+    """Stub for `CrapsGame`. Contains interface used by the `Throw` class
+    hierarchy to implement game state changes.
+
+    Attributes:
+        point: The current point. This will be replaced by a proper state design
+        pattern.
+    """
+
+    def __init__(self) -> None:
+        """Creates this game. A later version will use a constructor to include
+        the `Dice` and `CrapsTable` instances."""
+        self.point = None
+
+    def craps(self) -> None:
+        """Resolves all current 1-roll bets.
+
+        If the point is zero, this was a come out roll: Pass Line bets are an
+        immediate loss, Don’t Pass Line bets are an immediate win.
+
+        If the point is non-zero, Come Line bets are an immediate loss; Don’t
+        Come Line bets are an immediate win.
+
+        The state doesn't change.
+
+        A future version will delegate responsibility to the craps() method of
+        a current state object.
+        """
+        ...
+
+    def natural(self) -> None:
+        """A roll of 7 occurred. Resolves all current 1-roll bets.
+
+        If the point is None, this was a come out roll: Pass Line bets are an
+        immediate win; Don’t Pass Line bets are an immediate loss.
+
+        If the point is non-None, Come Line bets are an immediate win; Don’t
+        Come bets are an immediate loss; the point is also reset to zero
+        because the game is over.
+
+        Also, hardways bets are all losses.
+
+        A future version will delegate responsibility to the natural() method
+        of a current state object.
+        """
+        if self.point:
+            self.point = None
+
+    def eleven(self) -> None:
+        """Resolves all current 1-roll bets.
+
+        If the point is None, this was a come out roll: Pass Line bets are an
+        immediate win; Don’t Pass Line bets are an immediate loss.
+
+        If the point is non-None, Come Line bets are an immediate win; Don’t
+        Come bets are an immediate loss; the point is also reset to zero
+        because the game is over.
+
+        Also, hardways bets are all losses.
+
+        A future version will delegate responsibility to the natural() method
+        of a current state object.
+        """
+        ...
+
+    def point(self) -> None:
+        """Resolves all current 1-roll bets.
+
+        If the point was None, this is a come out roll, and the value of the
+        dice establishes the point.
+
+        If the point was non-None and this throw matches the point the game is
+        over: Pass Line bets and associated odds bets are winners; Don’t Pass
+        bets and associated odds bets are losers; the point is reset to zero.
+
+        Finally, if the point is non-None and this throw does not match the
+        point, the state doesn't change. Come point and Don’t come point bets
+        may be resolved. Additionally, hardways bets may be resolved.
+
+        A future version will delegate responsibility to the current state’s
+        point() method to advance the game state.
+        """
+        if self.point is None:
+            pass  # Set point to value of dice roll.
+        elif self.point == "dice roll":
+            # Win this game and set point off.
+            self.point = None
+
+    def __str__(self) -> str:
+        """TODO: Update when `CrapsGame` has an internal state."""
+        return str(self.point) if self.point else "Point Off"
 
 
 class Wheel:
@@ -1456,13 +1549,13 @@ def main():
     table = Table()
     game = Game(table, table.wheel)
     # # To run a simulation for just one player and print the results:
-    # player = PlayerFibonacci(table)
-    # sim = Simulator(game, player)
-    # sim.gather()
-    # print_sim_results(sim)
-    bulk_sim = BulkSimulator(game)
-    bulk_sim.gather_all()
-    bulk_sim.save_to_csv("sim_stats.csv")
+    player = PlayerFibonacci(table)
+    sim = Simulator(game, player)
+    sim.gather()
+    print_sim_results(sim)
+    # bulk_sim = BulkSimulator(game)
+    # bulk_sim.gather_all()
+    # bulk_sim.save_to_csv("sim_stats.csv")
 
 
 if __name__ == "__main__":
