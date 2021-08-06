@@ -212,3 +212,33 @@ class MockIntegerStatistics:
 
     def stdev(self):
         return 1.1
+
+
+class MockCrapsGame:
+    def __init__(self):
+        self.current_point = None
+
+    def craps(self):
+        ...
+
+    def natural(self) -> None:
+        if self.current_point:
+            self.current_point = None
+
+    def eleven(self):
+        ...
+
+    def point(self):
+        if self.current_point is None:
+            self.current_point = "dice roll"  # Set point to value of dice roll.
+        elif self.current_point == "dice roll":
+            # Win this game and set point off.
+            self.current_point = None
+
+    def __str__(self) -> str:
+        return str(self.current_point) if self.current_point else "Point Off"
+
+
+@pytest.fixture
+def mock_craps_game(monkeypatch):
+    monkeypatch.setattr(casino.main, "CrapsGame", MockCrapsGame)

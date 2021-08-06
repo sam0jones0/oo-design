@@ -11,6 +11,7 @@ from typing import (
     FrozenSet,
     Iterator,
     Iterable,
+    Optional,
     Dict,
     List,
     Type,
@@ -327,14 +328,15 @@ class CrapsGame:
     hierarchy to implement game state changes.
 
     Attributes:
-        point: The current point. This will be replaced by a proper state design
+        current_point: The current point. This will be replaced by a proper state design
         pattern.
     """
+    current_point: Optional[int]
 
     def __init__(self) -> None:
         """Creates this game. A later version will use a constructor to include
         the `Dice` and `CrapsTable` instances."""
-        self.point = None
+        self.current_point = None
 
     def craps(self) -> None:
         """Resolves all current 1-roll bets.
@@ -367,8 +369,8 @@ class CrapsGame:
         A future version will delegate responsibility to the natural() method
         of a current state object.
         """
-        if self.point:
-            self.point = None
+        if self.current_point:
+            self.current_point = None
 
     def eleven(self) -> None:
         """Resolves all current 1-roll bets.
@@ -404,15 +406,15 @@ class CrapsGame:
         A future version will delegate responsibility to the current state’s
         point() method to advance the game state.
         """
-        if self.point is None:
-            pass  # Set point to value of dice roll.
-        elif self.point == "dice roll":
+        if self.current_point is None:
+            self.current_point = "dice roll"  # Set point to value of dice roll.
+        elif self.current_point == "dice roll":
             # Win this game and set point off.
-            self.point = None
+            self.current_point = None
 
     def __str__(self) -> str:
         """TODO: Update when `CrapsGame` has an internal state."""
-        return str(self.point) if self.point else "Point Off"
+        return str(self.current_point) if self.current_point else "Point Off"
 
 
 class Wheel:
