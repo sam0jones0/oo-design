@@ -2,7 +2,7 @@
 
 import pytest
 
-from casino.main import Table, Passenger57, Game, Simulator
+from casino.main import Table, Passenger57, RouletteGame, Simulator
 
 
 def test_simulator(seeded_wheel):
@@ -10,7 +10,7 @@ def test_simulator(seeded_wheel):
     table = Table()
     table.wheel = wheel
     player = Passenger57(table)
-    game = Game(table, wheel)
+    game = RouletteGame(table, wheel)
 
     sim = Simulator(game, player)
     sim.init_duration = 20

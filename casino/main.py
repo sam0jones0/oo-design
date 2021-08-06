@@ -159,11 +159,15 @@ class Throw:
     Craps.
 
     Attributes:
-        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
-            These bets are immediately resolved as winners.
         d1: One of the two die values, from 1 to 6.
         d2: The other of the two die values, from 1 to 6.
+        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
+            These bets are immediately resolved as winners.
+        key: The key for this `Throw`. E.g. to locate the `Throw` object in dict
+        collections of all throws, such as `Dice.throws`.
     """
+
+    key: Tuple[int, int]
 
     def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
         """Creates this throw, and associates the given `Outcome` instances that
@@ -172,10 +176,13 @@ class Throw:
         self.d1 = d1
         self.d2 = d2
         self.outcomes = frozenset(outcomes)
+        self.key = (d1, d2)
 
     def hard(self) -> bool:
-        """Returns `True` if d1 is equal to d2. Helps to determine if hardways bets
-        have been won or lost.
+        """Helps to determine if hardways bets have been won or lost.
+
+        Returns:
+            `True` if d1 is equal to d2, `False` otherwise.
         """
         return self.d1 == self.d2
 
@@ -203,8 +210,11 @@ class NaturalThrow(Throw):
     """
 
     def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
-        """Creates this `Throw` instance providing the constraint d1 + d2 == 7 is
+        """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` == 7 is
         satisfied.
+
+        Raises:
+            ValueError: Values of d1 and d2 do not represent a `NaturalThrow`.
         """
         if d1 + d2 != 7:
             raise ValueError("d1 + d2 must == 7 to init a NaturalThrow.")
@@ -212,7 +222,11 @@ class NaturalThrow(Throw):
         super(NaturalThrow, self).__init__(d1, d2, *outcomes)
 
     def hard(self) -> bool:
-        """A natural 7 is odd, and can never be made hardways. Always returns `False`."""
+        """A natural 7 is odd, and can never be made hardways.
+
+        Returns:
+            False: Always.
+        """
         return False
 
     def update_game(self, game: "CrapsGame") -> None:
@@ -236,8 +250,11 @@ class CrapsThrow(Throw):
     """
 
     def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
-        """Creates this `Throw` instance providing the constraint d1 + d2 in {2, 3, 12}
+        """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` in {2, 3, 12}
         is satisfied.
+
+        Raises:
+            ValueError: Values of d1 and d2 do not represent a `CrapsThrow`.
         """
         if d1 + d2 not in {2, 3, 12}:
             raise ValueError("d1 + d2 must be in {2, 3, 12} to init a CrapsThrow.")
@@ -245,7 +262,11 @@ class CrapsThrow(Throw):
         super(CrapsThrow, self).__init__(d1, d2, *outcomes)
 
     def hard(self) -> bool:
-        """Craps numbers are never part of hardways bets. Always returns `False`."""
+        """Craps numbers are never part of hardways bets
+
+        Returns:
+            False: Always.
+        """
         return False
 
     def update_game(self, game: "CrapsGame") -> None:
@@ -272,15 +293,23 @@ class ElevenThrow(Throw):
     """
 
     def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
-        """Creates this `Throw` instance providing the constraint d1 + d2 == 11
-        is satisfied."""
+        """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` == 11
+        is satisfied.
+
+        Raises:
+            ValueError: Values of d1 and d2 do not represent an `ElevenThrow`.
+        """
         if d1 + d2 != 11:
             raise ValueError("d1 + d2 must == 11 to init an ElevenThrow.")
 
         super(ElevenThrow, self).__init__(d1, d2, *outcomes)
 
     def hard(self) -> bool:
-        """Eleven is odd and is never part of hardways bets. Always returns `False`."""
+        """Eleven is odd and is never part of hardways bets.
+
+        Returns:
+            False: Always.
+        """
         return False
 
     def update_game(self, game: "CrapsGame") -> None:
@@ -304,7 +333,7 @@ class PointThrow(Throw):
     """
 
     def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
-        """Creates this `Throw` instance providing the constraint d1 + d2 in
+        """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` in
         {4, 5, 6, 8, 9, 10} is satisfied."""
         if d1 + d2 not in {4, 5, 6, 8, 9, 10}:
             raise ValueError(
@@ -323,98 +352,22 @@ class PointThrow(Throw):
         game.point()
 
 
-class CrapsGame:
-    """Stub for `CrapsGame`. Contains interface used by the `Throw` class
-    hierarchy to implement game state changes.
+class Dice:
+    """A `Dice` instances contains the 36 individual throws of two dice, plus
+    a random number generator. It can select a `Throw` object at random,
+    simulating a throw of dice.
 
     Attributes:
-        current_point: The current point. This will be replaced by a proper state design
-        pattern.
+        throws: A `dict` that maps a two-tuple (`Throw.key`) to a `Throw` instance.
+        rng: A random number generator used to select a `Throw` instance from
+            the `throws` collection.
     """
-    current_point: Optional[int]
+    throws: Dict[Tuple[int, int], Throw]
 
     def __init__(self) -> None:
-        """Creates this game. A later version will use a constructor to include
-        the `Dice` and `CrapsTable` instances."""
-        self.current_point = None
-
-    def craps(self) -> None:
-        """Resolves all current 1-roll bets.
-
-        If the point is zero, this was a come out roll: Pass Line bets are an
-        immediate loss, Don’t Pass Line bets are an immediate win.
-
-        If the point is non-zero, Come Line bets are an immediate loss; Don’t
-        Come Line bets are an immediate win.
-
-        The state doesn't change.
-
-        A future version will delegate responsibility to the craps() method of
-        a current state object.
-        """
-        ...
-
-    def natural(self) -> None:
-        """A roll of 7 occurred. Resolves all current 1-roll bets.
-
-        If the point is None, this was a come out roll: Pass Line bets are an
-        immediate win; Don’t Pass Line bets are an immediate loss.
-
-        If the point is non-None, Come Line bets are an immediate win; Don’t
-        Come bets are an immediate loss; the point is also reset to zero
-        because the game is over.
-
-        Also, hardways bets are all losses.
-
-        A future version will delegate responsibility to the natural() method
-        of a current state object.
-        """
-        if self.current_point:
-            self.current_point = None
-
-    def eleven(self) -> None:
-        """Resolves all current 1-roll bets.
-
-        If the point is None, this was a come out roll: Pass Line bets are an
-        immediate win; Don’t Pass Line bets are an immediate loss.
-
-        If the point is non-None, Come Line bets are an immediate win; Don’t
-        Come bets are an immediate loss; the point is also reset to zero
-        because the game is over.
-
-        Also, hardways bets are all losses.
-
-        A future version will delegate responsibility to the natural() method
-        of a current state object.
-        """
-        ...
-
-    def point(self) -> None:
-        """Resolves all current 1-roll bets.
-
-        If the point was None, this is a come out roll, and the value of the
-        dice establishes the point.
-
-        If the point was non-None and this throw matches the point the game is
-        over: Pass Line bets and associated odds bets are winners; Don’t Pass
-        bets and associated odds bets are losers; the point is reset to zero.
-
-        Finally, if the point is non-None and this throw does not match the
-        point, the state doesn't change. Come point and Don’t come point bets
-        may be resolved. Additionally, hardways bets may be resolved.
-
-        A future version will delegate responsibility to the current state’s
-        point() method to advance the game state.
-        """
-        if self.current_point is None:
-            self.current_point = "dice roll"  # Set point to value of dice roll.
-        elif self.current_point == "dice roll":
-            # Win this game and set point off.
-            self.current_point = None
-
-    def __str__(self) -> str:
-        """TODO: Update when `CrapsGame` has an internal state."""
-        return str(self.current_point) if self.current_point else "Point Off"
+        """Build the dictionary of `Throw` instances."""
+        self.throws = dict()  # TODO: Build `Throw` objects.
+        self.rng = random.Random()
 
 
 class Wheel:
@@ -1315,8 +1268,103 @@ class PlayerFibonacci(Player):
         self.recent = next_
 
 
-class Game:
-    """`Game` manages the sequence of actions that defines the game of Roulette.
+class CrapsGame:
+    """Stub for `CrapsGame`. Contains interface used by the `Throw` class
+    hierarchy to implement game state changes.
+
+    Attributes:
+        current_point: The current point. This will be replaced by a proper state design
+        pattern.
+    """
+
+    current_point: Optional[int]
+
+    def __init__(self) -> None:
+        """Creates this game. A later version will use a constructor to include
+        the `Dice` and `CrapsTable` instances."""
+        self.current_point = None
+
+    def craps(self) -> None:
+        """Resolves all current 1-roll bets.
+
+        If the point is zero, this was a come out roll: Pass Line bets are an
+        immediate loss, Don’t Pass Line bets are an immediate win.
+
+        If the point is non-zero, Come Line bets are an immediate loss; Don’t
+        Come Line bets are an immediate win.
+
+        The state doesn't change.
+
+        A future version will delegate responsibility to the craps() method of
+        a current state object.
+        """
+        ...
+
+    def natural(self) -> None:
+        """A roll of 7 occurred. Resolves all current 1-roll bets.
+
+        If the point is None, this was a come out roll: Pass Line bets are an
+        immediate win; Don’t Pass Line bets are an immediate loss.
+
+        If the point is non-None, Come Line bets are an immediate win; Don’t
+        Come bets are an immediate loss; the point is also reset to zero
+        because the game is over.
+
+        Also, hardways bets are all losses.
+
+        A future version will delegate responsibility to the natural() method
+        of a current state object.
+        """
+        if self.current_point:
+            self.current_point = None
+
+    def eleven(self) -> None:
+        """Resolves all current 1-roll bets.
+
+        If the point is None, this was a come out roll: Pass Line bets are an
+        immediate win; Don’t Pass Line bets are an immediate loss.
+
+        If the point is non-None, Come Line bets are an immediate win; Don’t
+        Come bets are an immediate loss; the point is also reset to zero
+        because the game is over.
+
+        Also, hardways bets are all losses.
+
+        A future version will delegate responsibility to the natural() method
+        of a current state object.
+        """
+        ...
+
+    def point(self) -> None:
+        """Resolves all current 1-roll bets.
+
+        If the point was None, this is a come out roll, and the value of the
+        dice establishes the point.
+
+        If the point was non-None and this throw matches the point the game is
+        over: Pass Line bets and associated odds bets are winners; Don’t Pass
+        bets and associated odds bets are losers; the point is reset to zero.
+
+        Finally, if the point is non-None and this throw does not match the
+        point, the state doesn't change. Come point and Don’t come point bets
+        may be resolved. Additionally, hardways bets may be resolved.
+
+        A future version will delegate responsibility to the current state’s
+        point() method to advance the game state.
+        """
+        if self.current_point is None:
+            self.current_point = "dice roll"  # Set point to value of dice roll.
+        elif self.current_point == "dice roll":
+            # Win this game and set point off.
+            self.current_point = None
+
+    def __str__(self) -> str:
+        """TODO: Update when `CrapsGame` has an internal state."""
+        return str(self.current_point) if self.current_point else "Point Off"
+
+
+class RouletteGame:
+    """`RouletteGame` manages the sequence of actions that defines the game of Roulette.
 
     This includes notifying the `Player` object to place bets, spinning the
     `Wheel` object and resolving the `Bet` instances actually present on the
@@ -1383,7 +1431,7 @@ class Simulator:
     maxima: "IntegerStatistics"
     end_stakes: "IntegerStatistics"
 
-    def __init__(self, game: Game, player: Player) -> None:
+    def __init__(self, game: RouletteGame, player: Player) -> None:
         self.init_duration = 250
         self.init_stake = 100
         self.samples = 50
@@ -1457,7 +1505,7 @@ class BulkSimulator:
     players: List[Type[Player]]
     player_stats: List[Dict]
 
-    def __init__(self, game: Game) -> None:
+    def __init__(self, game: RouletteGame) -> None:
         """Initialise `BulkSimulator` with the `game` we are simulating and gather
         all the player objects into self.players."""
         self.game = game
@@ -1549,7 +1597,7 @@ def print_sim_results(sim: Simulator) -> None:
 
 def main():
     table = Table()
-    game = Game(table, table.wheel)
+    game = RouletteGame(table, table.wheel)
     # # To run a simulation for just one player and print the results:
     player = PlayerFibonacci(table)
     sim = Simulator(game, player)

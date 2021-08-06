@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from casino.main import BinBuilder, Game, Passenger57, Table
+from casino.main import BinBuilder, RouletteGame, Passenger57, Table
 
 
 def test_game(seeded_wheel):
@@ -19,7 +19,7 @@ def test_game(seeded_wheel):
     table.wheel = wheel
     player = Passenger57(table)  # Always bets 1 on black.
     player.reset(20, 100)
-    game = Game(table, wheel)
+    game = RouletteGame(table, wheel)
 
     while player.playing():
         game.cycle(player)
