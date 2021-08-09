@@ -1,7 +1,9 @@
 """TODO"""
 
-import pytest
 import random
+from fractions import Fraction
+
+import pytest
 
 import casino
 from casino.main import BinBuilder, Wheel
@@ -87,7 +89,12 @@ def do_not_build_bins(monkey_module):
 class MockOutcome:
     def __init__(self, name, odds):
         self.name = name
-        self.odds = odds
+        if isinstance(odds, int):
+            self.odds = Fraction(odds, 1)
+        elif isinstance(odds, Fraction):
+            self.odds = odds
+        else:
+            raise TypeError("outcome_odds must be either an int or Fraction.")
 
     def __hash__(self):
         return hash(self.name)
@@ -115,6 +122,23 @@ def mock_outcomes():
         MockOutcome("foo", 1),
         MockOutcome("bar", 2),
         MockOutcome("har", 3),
+    ]
+
+
+class MockThrow:
+    def __init__(self, d1, d2, *outcomes):
+        self.d1 = d1
+        self.d2 = d2
+        self.outcomes = frozenset(outcomes)
+        self.key = (d1, d2)
+
+
+@pytest.fixture
+def mock_throws():
+    return [
+        MockThrow(2, 6, MockOutcome("foo", 1), MockOutcome("bar", 2)),
+        MockThrow(5, 5, MockOutcome("bar", 2), MockOutcome("har", 3)),
+        MockThrow(1, 3, MockOutcome("foo", 1), MockOutcome("har", 3)),
     ]
 
 

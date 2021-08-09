@@ -19,6 +19,7 @@ class TestThrows:
         throw = Throw(1, 6, "outcome_1", "outcome_2")  # type: ignore
         assert throw.d1 == 1
         assert throw.d2 == 6
+        assert throw.key == (1, 6)
         assert isinstance(throw.outcomes, frozenset)
         assert "outcome_1" in throw.outcomes
         assert "outcome_2" in throw.outcomes
@@ -40,6 +41,7 @@ class TestThrows:
         nat_throw = NaturalThrow(1, 6, "outcome_1", "outcome_2")  # type: ignore
         assert nat_throw.d1 == 1
         assert nat_throw.d2 == 6
+        assert nat_throw.key == (1, 6)
         assert isinstance(nat_throw.outcomes, frozenset)
         assert "outcome_1" in nat_throw.outcomes
         assert "outcome_2" in nat_throw.outcomes
@@ -62,6 +64,7 @@ class TestThrows:
         craps_throw = CrapsThrow(1, 1, "outcome_1", "outcome_2")  # type: ignore
         assert craps_throw.d1 == 1
         assert craps_throw.d2 == 1
+        assert craps_throw.key == (1, 1)
         assert isinstance(craps_throw.outcomes, frozenset)
         assert "outcome_1" in craps_throw.outcomes
         assert "outcome_2" in craps_throw.outcomes
@@ -85,6 +88,7 @@ class TestThrows:
         eleven_throw = ElevenThrow(5, 6, "outcome_1", "outcome_2")  # type: ignore
         assert eleven_throw.d1 == 5
         assert eleven_throw.d2 == 6
+        assert eleven_throw.key == (5, 6)
         assert isinstance(eleven_throw.outcomes, frozenset)
         assert "outcome_1" in eleven_throw.outcomes
         assert "outcome_2" in eleven_throw.outcomes
@@ -108,6 +112,7 @@ class TestThrows:
         point_throw = PointThrow(4, 4, "outcome_1", "outcome_2")  # type: ignore
         assert point_throw.d1 == 4
         assert point_throw.d2 == 4
+        assert point_throw.key == (4, 4)
         assert isinstance(point_throw.outcomes, frozenset)
         assert "outcome_1" in point_throw.outcomes
         assert "outcome_2" in point_throw.outcomes

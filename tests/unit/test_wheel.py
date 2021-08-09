@@ -9,18 +9,22 @@ from casino.main import Wheel
 
 @pytest.mark.usefixtures("do_not_build_bins")
 class TestWheel:
-    def test_add(self, mock_outcomes):
-        o1, o2, o3 = mock_outcomes
+    @pytest.fixture(autouse=True)
+    def _mock_outcomes(self, mock_outcomes):
+        self.mock_outcomes = mock_outcomes
+
+    def test_add(self):
+        o1, o2, o3 = self.mock_outcomes
         wheel = Wheel()
         wheel.add_outcomes(8, [o1])
         wheel.add_outcomes(8, [o2, o3])
 
         assert len(wheel.all_outcomes) == 3
 
-    def test_choose(self, seeded_wheel, mock_outcomes):
-        o1, o2, o3 = mock_outcomes
+    def test_choose(self, seeded_wheel):
+        o1, o2, o3 = self.mock_outcomes
         wheel = seeded_wheel
-        wheel.add_outcomes(8, mock_outcomes)
+        wheel.add_outcomes(8, self.mock_outcomes)
         # First randint(0, 37) of seeded_wheel will return 8.
         random_bin = wheel.choose()
 
@@ -31,8 +35,8 @@ class TestWheel:
         assert o2 in wheel.get_bin(8)
         assert o3 in wheel.get_bin(8)
 
-    def test_get(self, wheel_with_outcomes, mock_outcomes):
-        o1, o2, o3 = mock_outcomes
+    def test_get(self, wheel_with_outcomes):
+        o1, o2, o3 = self.mock_outcomes
         wheel = wheel_with_outcomes
 
         assert wheel.get_outcome(o1.name) is o1

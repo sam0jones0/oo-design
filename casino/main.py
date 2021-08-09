@@ -362,12 +362,43 @@ class Dice:
         rng: A random number generator used to select a `Throw` instance from
             the `throws` collection.
     """
+
     throws: Dict[Tuple[int, int], Throw]
 
     def __init__(self) -> None:
         """Build the dictionary of `Throw` instances."""
         self.throws = dict()  # TODO: Build `Throw` objects.
         self.rng = random.Random()
+
+    def add_throw(self, throw: Throw) -> None:
+        """Adds the given `Throw` to the mapping maintained by this `Dice`
+        instance.
+
+        Args:
+            throw: The `Throw` to add.
+        """
+        self.throws[throw.key] = throw
+
+    def roll(self) -> Throw:
+        """Returns a randomly selected `Throw` instance."""
+        result_key = self.rng.choice(list(self.throws))
+        return self.throws[result_key]
+
+    def _get_throw(self, d1: int, d2: int) -> Optional[Throw]:
+        """Takes a particular combination of dice and returns the appropriate
+        `Throw` object.
+
+        This is not needed by the main application. Unit tests will need this method
+        to return a specific `Throw` rather than a randomly selected one.
+
+        Args:
+            d1: The value of one die.
+            d2: The value of the other die.
+
+        Returns:
+            The specified `Throw` instance. Or `None` if no such instance exists.
+        """
+        return self.throws.get((d1, d2))
 
 
 class Wheel:

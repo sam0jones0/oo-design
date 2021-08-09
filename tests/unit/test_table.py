@@ -62,7 +62,8 @@ class TestTable:
         t = Table(*sample_bets)
         assert str(t) == "1 on Red 1:1, 2 on 4-1 Split 4:1, 5 on Dozen 1 6:1"
         assert (
-            repr(t) == "Table(Bet(amount=1, outcome=Outcome(name='Red', odds=1)), "
-            "Bet(amount=2, outcome=Outcome(name='4-1 Split', odds=4)), "
-            "Bet(amount=5, outcome=Outcome(name='Dozen 1', odds=6)))"
+            repr(t)
+            == "Table(Bet(amount=1, outcome=Outcome(name='Red', odds=Fraction(1, 1))), "
+            "Bet(amount=2, outcome=Outcome(name='4-1 Split', odds=Fraction(4, 1))), "
+            "Bet(amount=5, outcome=Outcome(name='Dozen 1', odds=Fraction(6, 1))))"
         )
