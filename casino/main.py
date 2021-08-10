@@ -16,6 +16,7 @@ from typing import (
     List,
     Type,
     Union,
+    Any,
 )
 
 if __package__ is None or __package__ == "":
@@ -113,7 +114,41 @@ class Outcome:
         )
 
 
-class Bin:
+class RandomEvent:
+    """This is the superclass for the random events on which a `Player` bets.
+    This includes the `Bin` class of a Roulette wheel and the `Throw` class of
+    craps dice.
+
+    An event is a collection of individual `Outcome` instances. Instances of the
+    `Bin` and `Throw` classes can leverage this collection instead of leveraging
+    `frozenset` directly.
+    """
+
+    outcomes: FrozenSet[Outcome]
+
+    def __init__(self, outcomes: Iterable[Outcome] = None) -> None:
+        if outcomes:
+            self.outcomes = frozenset(outcomes)
+        else:
+            self.outcomes = frozenset()
+
+    def add(self, outcomes: Iterable[Outcome]) -> None:
+        """Adds the given `Outcomes` to this `RandomEvent`.
+
+        Args:
+            outcomes: An iterable containing one or more `Outcome` instances to
+            add to this `RandomEvent`.
+        """
+        self.outcomes |= frozenset(outcomes)
+
+    def __iter__(self) -> Iterator:
+        return iter(self.outcomes)
+
+    def __contains__(self, item: Outcome) -> bool:
+        return item in self.outcomes
+
+
+class Bin(RandomEvent):
     """`Bin` contains a collection of `Outcome` instances which reflect the winning
     bets that are paid for a particular bin on a Roulette wheel.
 
@@ -128,31 +163,14 @@ class Bin:
         outcomes: A collection of `Outcome` instances in this `Bin`.
     """
 
-    outcomes: FrozenSet[Outcome]
-
-    def __init__(self) -> None:
+    def __init__(self, outcomes: Iterable[Outcome] = None) -> None:
         """Creates an empty `Bin` and initialise a frozenset to store added
         `Outcomes`.
         """
-        self.outcomes = frozenset()
-
-    def add(self, outcomes: Iterable[Outcome]) -> None:
-        """Adds the given `Outcomes` to this `Bin`.
-
-        Args:
-            outcomes: An iterable containing one or more `Outcome` instances to
-            add to this `Bin`.
-        """
-        self.outcomes |= frozenset(outcomes)
-
-    def __iter__(self) -> Iterator:
-        return iter(self.outcomes)
-
-    def __contains__(self, item: Outcome) -> bool:
-        return item in self.outcomes
+        super(Bin, self).__init__(outcomes)
 
 
-class Throw:
+class Throw(RandomEvent):
     """The `Throw` class is the superclass for the various throws of the dice.
 
     Each subclass is a different grouping of the numbers, based on the rules for
@@ -169,13 +187,13 @@ class Throw:
 
     key: Tuple[int, int]
 
-    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome] = None) -> None:
         """Creates this throw, and associates the given `Outcome` instances that
         are winning propositions.
         """
+        super(Throw, self).__init__(outcomes)
         self.d1 = d1
         self.d2 = d2
-        self.outcomes = frozenset(outcomes)
         self.key = (d1, d2)
 
     def hard(self) -> bool:
@@ -209,7 +227,7 @@ class NaturalThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` == 7 is
         satisfied.
 
@@ -219,7 +237,7 @@ class NaturalThrow(Throw):
         if d1 + d2 != 7:
             raise ValueError("d1 + d2 must == 7 to init a NaturalThrow.")
 
-        super(NaturalThrow, self).__init__(d1, d2, *outcomes)
+        super(NaturalThrow, self).__init__(d1, d2, outcomes)
 
     def hard(self) -> bool:
         """A natural 7 is odd, and can never be made hardways.
@@ -249,7 +267,7 @@ class CrapsThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` in {2, 3, 12}
         is satisfied.
 
@@ -259,7 +277,7 @@ class CrapsThrow(Throw):
         if d1 + d2 not in {2, 3, 12}:
             raise ValueError("d1 + d2 must be in {2, 3, 12} to init a CrapsThrow.")
 
-        super(CrapsThrow, self).__init__(d1, d2, *outcomes)
+        super(CrapsThrow, self).__init__(d1, d2, outcomes)
 
     def hard(self) -> bool:
         """Craps numbers are never part of hardways bets
@@ -292,7 +310,7 @@ class ElevenThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` == 11
         is satisfied.
 
@@ -302,7 +320,7 @@ class ElevenThrow(Throw):
         if d1 + d2 != 11:
             raise ValueError("d1 + d2 must == 11 to init an ElevenThrow.")
 
-        super(ElevenThrow, self).__init__(d1, d2, *outcomes)
+        super(ElevenThrow, self).__init__(d1, d2, outcomes)
 
     def hard(self) -> bool:
         """Eleven is odd and is never part of hardways bets.
@@ -332,7 +350,7 @@ class PointThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, *outcomes: Outcome) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` in
         {4, 5, 6, 8, 9, 10} is satisfied."""
         if d1 + d2 not in {4, 5, 6, 8, 9, 10}:
@@ -340,7 +358,7 @@ class PointThrow(Throw):
                 "d1 + d2 must be in {4, 5, 6, 8, 9, 10} to init a PointThrow."
             )
 
-        super(PointThrow, self).__init__(d1, d2, *outcomes)
+        super(PointThrow, self).__init__(d1, d2, outcomes)
 
     def update_game(self, game: "CrapsGame") -> None:
         """Calls the point() method of a `CrapsGame` instance. This may change the

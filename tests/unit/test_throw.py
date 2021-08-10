@@ -16,7 +16,8 @@ class TestThrows:
 
     def test_throw(self):
         """Test the `Throw` superclass."""
-        throw = Throw(1, 6, "outcome_1", "outcome_2")  # type: ignore
+        throw = Throw(1, 6, ["outcome_1"])  # type: ignore
+        throw.add(["outcome_2"])  # type: ignore
         assert throw.d1 == 1
         assert throw.d2 == 6
         assert throw.key == (1, 6)
@@ -38,7 +39,8 @@ class TestThrows:
             with pytest.raises(ValueError):
                 _ = NaturalThrow(d1, d2, "outcome")  # type: ignore
 
-        nat_throw = NaturalThrow(1, 6, "outcome_1", "outcome_2")  # type: ignore
+        nat_throw = NaturalThrow(1, 6, ["outcome_1"])  # type: ignore
+        nat_throw.add(["outcome_2"])  # type: ignore  # type: ignore
         assert nat_throw.d1 == 1
         assert nat_throw.d2 == 6
         assert nat_throw.key == (1, 6)
@@ -61,7 +63,8 @@ class TestThrows:
             with pytest.raises(ValueError):
                 _ = CrapsThrow(d1, d2, "outcome")  # type: ignore
 
-        craps_throw = CrapsThrow(1, 1, "outcome_1", "outcome_2")  # type: ignore
+        craps_throw = CrapsThrow(1, 1, ["outcome_1"])  # type: ignore
+        craps_throw.add(["outcome_2"])  # type: ignore
         assert craps_throw.d1 == 1
         assert craps_throw.d2 == 1
         assert craps_throw.key == (1, 1)
@@ -85,7 +88,8 @@ class TestThrows:
             with pytest.raises(ValueError):
                 _ = ElevenThrow(d1, d2, "outcome")  # type: ignore
 
-        eleven_throw = ElevenThrow(5, 6, "outcome_1", "outcome_2")  # type: ignore
+        eleven_throw = ElevenThrow(5, 6, ["outcome_1"])  # type: ignore
+        eleven_throw.add(["outcome_2"])  # type: ignore
         assert eleven_throw.d1 == 5
         assert eleven_throw.d2 == 6
         assert eleven_throw.key == (5, 6)
@@ -109,7 +113,8 @@ class TestThrows:
             with pytest.raises(ValueError):
                 _ = PointThrow(d1, d2, "outcome")  # type: ignore
 
-        point_throw = PointThrow(4, 4, "outcome_1", "outcome_2")  # type: ignore
+        point_throw = PointThrow(4, 4, ["outcome_1"])  # type: ignore
+        point_throw.add(["outcome_2"])  # type: ignore
         assert point_throw.d1 == 4
         assert point_throw.d2 == 4
         assert point_throw.key == (4, 4)
