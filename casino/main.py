@@ -1,10 +1,12 @@
 """
 TODO
 """
+
 import csv
 import math
 import random
 import typing
+from abc import ABC, abstractmethod
 from fractions import Fraction
 from typing import (
     Tuple,
@@ -16,7 +18,6 @@ from typing import (
     List,
     Type,
     Union,
-    Any,
 )
 
 if __package__ is None or __package__ == "":
@@ -59,12 +60,15 @@ class Outcome:
         else:
             raise TypeError("outcome_odds must be either an int or Fraction.")
 
-    def win_amount(self, amount: int) -> int:
+    def win_amount(self, amount: int, event: "RandomEvent" = None) -> int:
         """Multiplies this `Outcome`'s odds by the given ``amount`` and returns
         the product.
 
         Args:
             amount: The amount being bet.
+            event: An optional `RandomEvent` (e.g. `Throw`) instance to determine
+                the actual odds to use. If not provided, this `Outcome` instance's
+                odds are used. This will be used in subclasses.
 
         Returns:
             The amount in winnings as an `int` excluding the initial bet.
@@ -114,6 +118,90 @@ class Outcome:
         )
 
 
+class OutcomeField(Outcome):
+    """`OutcomeField` contains a single outcome for field bets that have a number
+    of different odds, and the odds used depend on a `RandomEvent`.
+
+    Attributes:
+        name: The name of this outcome.
+        outcome_odds: The payout odds of this outcome.
+    """
+
+    def __init__(self, name: str, outcome_odds: Union[Fraction, int]) -> None:
+        """Sets the instance `name` and `odds` from the parameters. The odds here
+        are subject to change depending on a `RandomEvent` provided when calculating
+        `self.win_amount`.
+        """
+        super(OutcomeField, self).__init__(name, outcome_odds)
+
+    def win_amount(self, amount: int, event: "RandomEvent" = None) -> int:
+        """Returns the product of this `Outcome` objects odds by the given amount.
+
+        The odds are changed when provided with an ``event`` (e.g. `Throw`),
+        allowing a single `OutcomeField` object with different odds depending on
+        various `Throws` of the `Dice`.
+
+        Args:
+            amount: The amount being bet.
+            event: An optional `Throw` instance that determines the actual odds
+                to use. If not provided, this `Outcome` objects odds are used.
+        """
+        if event:
+            if event.event_id in {3, 4, 9, 10, 11}:
+                self.odds = Fraction(1, 1)
+            elif event.event_id in {2, 12}:
+                self.odds = Fraction(2, 1)
+            else:
+                raise ValueError(f"Throw is not a 'Field' throw: {event}")
+
+        return super(OutcomeField, self).win_amount(amount)
+
+    def __str__(self) -> str:
+        return f"{self.name} (1:1, 2 and 12 2:1)"
+
+
+class OutcomeHorn(Outcome):
+    """Contains a single outcome for a Horn bet that has a number of different
+    odds, and the odds used depend on a `RandomEvent` instance.
+
+    Attributes:
+        name: The name of this outcome.
+        outcome_odds: The payout odds of this outcome.
+    """
+
+    def __init__(self, name: str, outcome_odds: Union[Fraction, int]) -> None:
+        """Sets the instance `name` and `odds` from the parameters. The odds here
+        are subject to change depending on a `RandomEvent` provided when calculating
+        `self.win_amount`.
+        """
+        super(OutcomeHorn, self).__init__(name, outcome_odds)
+
+    def win_amount(self, amount: int, event: "RandomEvent" = None) -> int:
+        """Returns the product of this `Outcome` object's odds and the given amount.
+
+        The odds are changed when provided with an ``event`` (e.g. `Throw`),
+        allowing a single `OutcomeField` object with different odds depending on
+        various `Throws` of the `Dice`.
+
+        Args:
+            amount: The amount being bet.
+            event: An optional `Throw` instance that determines the actual odds
+                to use. If not provided, this `Outcome` objects odds are used.
+        """
+        if event:
+            if event.event_id in {2, 12}:
+                self.odds = Fraction(27, 4)
+            elif event.event_id in {3, 11}:
+                self.odds = Fraction(3, 1)
+            else:
+                raise ValueError(f"Throw is not a 'Horn' throw: {event}")
+
+        return super(OutcomeHorn, self).win_amount(amount)
+
+    def __str__(self):
+        return f"{self.name} (27:4, 3:1)"
+
+
 class RandomEvent:
     """This is the superclass for the random events on which a `Player` bets.
     This includes the `Bin` class of a Roulette wheel and the `Throw` class of
@@ -122,15 +210,36 @@ class RandomEvent:
     An event is a collection of individual `Outcome` instances. Instances of the
     `Bin` and `Throw` classes can leverage this collection instead of leveraging
     `frozenset` directly.
+
+    Attributes:
+        outcomes: Any `Outcome`s to add to this `RandomEvent` on instantiation.
+        event_id: An integer event identifier to be defined in subclasses.
     """
 
     outcomes: FrozenSet[Outcome]
+    _event_id: Optional[int]
 
     def __init__(self, outcomes: Iterable[Outcome] = None) -> None:
+        """Creates the `RandomEvent` and wraps a `frozenset` to store added
+        `Outcome`s."""
         if outcomes:
             self.outcomes = frozenset(outcomes)
         else:
             self.outcomes = frozenset()
+        self._event_id = None
+
+    @property
+    def event_id(self) -> Optional[int]:
+        """An identifier which exposes properties of a `RandomEvent`.
+
+        E.g. In Craps, this is the sum of the two dice in a `Throw`. An
+        `OutcomeField` pays different odds depending on the numbers rolled, these
+        odds can then be calculated given the current `Throw` instance.
+
+        Returns:
+            Optional; An int event identifier.
+        """
+        raise NotImplementedError
 
     def add(self, outcomes: Iterable[Outcome]) -> None:
         """Adds the given `Outcomes` to this `RandomEvent`.
@@ -161,6 +270,7 @@ class Bin(RandomEvent):
 
     Attributes:
         outcomes: A collection of `Outcome` instances in this `Bin`.
+        event_id: An integer event identifier (currently not used for `Bin`).
     """
 
     def __init__(self, outcomes: Iterable[Outcome] = None) -> None:
@@ -168,6 +278,11 @@ class Bin(RandomEvent):
         `Outcomes`.
         """
         super(Bin, self).__init__(outcomes)
+
+    @property
+    def event_id(self) -> Optional[int]:
+        """There is no current use for a `Bin.event_id`."""
+        return None
 
 
 class Throw(RandomEvent):
@@ -183,6 +298,8 @@ class Throw(RandomEvent):
             These bets are immediately resolved as winners.
         key: The key for this `Throw`. E.g. to locate the `Throw` object in dict
         collections of all throws, such as `Dice.throws`.
+        event_id: An integer identifier; the sum of d1 and d2. Used by some `Outcome`
+            instances to set variable odds based on a `Throw`'s values.
     """
 
     key: Tuple[int, int]
@@ -195,6 +312,13 @@ class Throw(RandomEvent):
         self.d1 = d1
         self.d2 = d2
         self.key = (d1, d2)
+
+    @property
+    def event_id(self) -> int:
+        """Returns the sum of the dice rolls for this `Throw`."""
+        if self._event_id is None:
+            self._event_id = sum(self.key)
+        return self._event_id  # type: ignore
 
     def hard(self) -> bool:
         """Helps to determine if hardways bets have been won or lost.
@@ -370,55 +494,6 @@ class PointThrow(Throw):
         game.point()
 
 
-class Dice:
-    """A `Dice` instances contains the 36 individual throws of two dice, plus
-    a random number generator. It can select a `Throw` object at random,
-    simulating a throw of dice.
-
-    Attributes:
-        throws: A `dict` that maps a two-tuple (`Throw.key`) to a `Throw` instance.
-        rng: A random number generator used to select a `Throw` instance from
-            the `throws` collection.
-    """
-
-    throws: Dict[Tuple[int, int], Throw]
-
-    def __init__(self) -> None:
-        """Build the dictionary of `Throw` instances."""
-        self.throws = dict()  # TODO: Build `Throw` objects.
-        self.rng = random.Random()
-
-    def add_throw(self, throw: Throw) -> None:
-        """Adds the given `Throw` to the mapping maintained by this `Dice`
-        instance.
-
-        Args:
-            throw: The `Throw` to add.
-        """
-        self.throws[throw.key] = throw
-
-    def roll(self) -> Throw:
-        """Returns a randomly selected `Throw` instance."""
-        result_key = self.rng.choice(list(self.throws))
-        return self.throws[result_key]
-
-    def _get_throw(self, d1: int, d2: int) -> Optional[Throw]:
-        """Takes a particular combination of dice and returns the appropriate
-        `Throw` object.
-
-        This is not needed by the main application. Unit tests will need this method
-        to return a specific `Throw` rather than a randomly selected one.
-
-        Args:
-            d1: The value of one die.
-            d2: The value of the other die.
-
-        Returns:
-            The specified `Throw` instance. Or `None` if no such instance exists.
-        """
-        return self.throws.get((d1, d2))
-
-
 class Wheel:
     """Wheel contains the 38 individual bins on a Roulette wheel, a random
     number generator and a collection of all possible outcomes. It can select a
@@ -501,6 +576,55 @@ class Wheel:
         if outcome is None:
             raise KeyError(f"No Outcome with name: {name}")
         return outcome
+
+
+class Dice:
+    """A `Dice` instances contains the 36 individual throws of two dice, plus
+    a random number generator. It can select a `Throw` object at random,
+    simulating a throw of dice.
+
+    Attributes:
+        throws: A `dict` that maps a two-tuple (`Throw.key`) to a `Throw` instance.
+        rng: A random number generator used to select a `Throw` instance from
+            the `throws` collection.
+    """
+
+    throws: Dict[Tuple[int, int], Throw]
+
+    def __init__(self) -> None:
+        """Build the dictionary of `Throw` instances."""
+        self.throws = dict()  # TODO: Build `Throw` objects.
+        self.rng = random.Random()
+
+    def add_throw(self, throw: Throw) -> None:
+        """Adds the given `Throw` to the mapping maintained by this `Dice`
+        instance.
+
+        Args:
+            throw: The `Throw` to add.
+        """
+        self.throws[throw.key] = throw
+
+    def roll(self) -> Throw:
+        """Returns a randomly selected `Throw` instance."""
+        result_key = self.rng.choice(list(self.throws))
+        return self.throws[result_key]
+
+    def _get_throw(self, d1: int, d2: int) -> Optional[Throw]:
+        """Takes a particular combination of dice and returns the appropriate
+        `Throw` object.
+
+        This is not needed by the main application. Unit tests will need this method
+        to return a specific `Throw` rather than a randomly selected one.
+
+        Args:
+            d1: The value of one die.
+            d2: The value of the other die.
+
+        Returns:
+            The specified `Throw` instance. Or `None` if no such instance exists.
+        """
+        return self.throws.get((d1, d2))
 
 
 class BinBuilder:
@@ -611,7 +735,7 @@ class BinBuilder:
 
     def gen_dozen_bets(self) -> None:
         for dozen in range(0, 3):
-            outcome = Outcome(f"Dozen {dozen+1}", odds.DOZEN)
+            outcome = Outcome(f"Dozen {dozen + 1}", odds.DOZEN)
             for num in range(0, 12):
                 self.temp_bins[dozen * 12 + num + 1].append(outcome)
 
@@ -666,6 +790,30 @@ class BinBuilder:
         outcome = Outcome("Five", odds.FIVE)
         for num in [0, 37, 1, 2, 3]:
             self.temp_bins[num].append(outcome)
+
+
+class ThrowBuilder:
+    """Initialises the 36 `Throw` instances, each initialised with the
+    appropriate `Outcome` instances.
+
+    Subclasses can override this to reflect different casino-specific rules for
+    odds on Field bets."""
+
+    def __init__(self) -> None:
+        """Initialises the `ThrowBuilder`."""
+        ...
+
+    def build_throws(self, dice: Dice) -> None:
+        """Creates the 8 one-roll `Outcome` instances (2, 3, 7, 11, 12, Field,
+        Horn, Any Craps). It then creates each of the 36 `Throw` instances, each
+        of which has the appropriate combination of `Outcome` instances. The
+        `Throw` instances are assigned to `Dice`.
+
+        Args:
+            dice: The `Dice` instance that must be populated with `Throw`s
+            containing `Outcome` instances.
+        """
+        ...
 
 
 class Bet:
@@ -784,7 +932,7 @@ class Table:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
-class Player:
+class Player(ABC):
     """`Player` places bets in Roulette.
 
     This is an abstract class, with no body for the `Player.place_bets()` method.
@@ -813,6 +961,13 @@ class Player:
         self.stake = 0
         self.rounds_to_go = 0
 
+    @abstractmethod
+    def place_bets(self) -> None:
+        """Must be overridden in subclass as each `Player` will have different
+        betting strategy.
+        """
+        pass
+
     def reset(self, duration: int, stake: int) -> None:
         """Sets `stake` and `rounds_to_go` according to the values passed by the
         overall simulation control. Called before the start of a new session.
@@ -823,12 +978,6 @@ class Player:
         """
         self.rounds_to_go = duration
         self.stake = stake
-
-    def place_bets(self) -> None:
-        """Must be overridden in subclass as each `Player` will have different
-        betting strategy.
-        """
-        raise NotImplementedError
 
     def playing(self) -> bool:
         """Returns ``True`` while the player is still active."""
@@ -1561,25 +1710,6 @@ class BulkSimulator:
         self.players = self.get_all_players()
         self.player_stats = []
 
-    def get_all_players(self) -> List[Type[Player]]:
-        """Recursively gathers the subclasses of ``cls``.
-
-        Returns:
-            A `list` containing each subclass object of ``cls`` and any subclasses
-                of their subclasses.
-        """
-        all_players = set()
-        for sub_cls in Player.__subclasses__():
-            all_players.add(sub_cls)
-            for sub_cls_sub in sub_cls.__subclasses__():
-                all_players.add(sub_cls_sub)
-
-        # Ensure players are always in the same order for csv row order
-        #  consistency and ease of testing.
-        all_players_list = list(all_players)
-        all_players_list.sort(key=lambda x: x.__name__)
-        return all_players_list
-
     def gather_all(self) -> None:
         """Behaves similarly to `Simulator.gather` but gathers statistics for every
         `Player` subclass and adds them as a `dict` to `self.player_stats`.
@@ -1614,6 +1744,26 @@ class BulkSimulator:
             writer.writeheader()
             writer.writerows(self.player_stats)
 
+    @staticmethod
+    def get_all_players() -> List[Type[Player]]:
+        """Recursively gathers the subclasses of ``cls``.
+
+        Returns:
+            A `list` containing each subclass object of ``cls`` and any subclasses
+                of their subclasses.
+        """
+        all_players = set()
+        for sub_cls in Player.__subclasses__():
+            all_players.add(sub_cls)
+            for sub_cls_sub in sub_cls.__subclasses__():
+                all_players.add(sub_cls_sub)
+
+        # Ensure players are always in the same order for csv row order
+        #  consistency and ease of testing.
+        all_players_list = list(all_players)
+        all_players_list.sort(key=lambda x: x.__name__)
+        return all_players_list
+
 
 def print_sim_results(sim: Simulator) -> None:
     """Print the results from a single `Simulator` instance after it is populated
@@ -1626,14 +1776,14 @@ def print_sim_results(sim: Simulator) -> None:
     if not sim.durations:
         sim.gather()
 
-    print(f"{'n':5s}{'Duration':>15s}{'Maxima':>15s}{'End Stake':>15s}\n{'-'*50}")
+    print(f"{'n':5s}{'Duration':>15s}{'Maxima':>15s}{'End Stake':>15s}\n{'-' * 50}")
     for n, duration, maxima, end in zip(
         range(len(sim.maxima)), sim.durations, sim.maxima, sim.end_stakes
     ):
-        print(f"{n+1:<5d}{duration:>15d}{maxima:>15d}{end:>15d}")
+        print(f"{n + 1:<5d}{duration:>15d}{maxima:>15d}{end:>15d}")
 
     print(
-        f"{'-'*50}\n{'Mean':<5s}"
+        f"{'-' * 50}\n{'Mean':<5s}"
         f"{sim.durations.mean():>15.2f}"
         f"{sim.maxima.mean():>15.2f}"
         f"{sim.end_stakes.mean():>15.2f}"

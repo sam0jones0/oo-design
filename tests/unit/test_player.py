@@ -10,6 +10,7 @@ from tests.conftest import MockTable
 def test_player(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     table = casino.main.Table()
+    Player.__abstractmethods__ = set()
     player = Player(table)
 
     assert isinstance(player.table, MockTable)
@@ -22,8 +23,7 @@ def test_player(monkeypatch, mock_table, mock_bet):
     assert player.rounds_to_go == 250
     assert player.playing()
 
-    with pytest.raises(NotImplementedError):
-        player.place_bets()
+    assert player.place_bets() == player.place_bets()
 
     player.win(mock_bet(50, "an_outcome"))
     assert player.stake == 200
