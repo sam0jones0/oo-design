@@ -16,5 +16,15 @@ COLUMN: int = 2  # 12-number columns.
 EVEN: int = 1  # Even, odd, high, low, red, black.
 
 # Craps
-FIELD_LO: int = 1
-FIELD_HI: int = 2
+PASS_COME: int = 1
+DONT_PASS_COME: int = 1
+PASS_COME_ODDS: int = 0  # TODO
+DONT_PASS_COME_ODDS: int = 0  # TODO
+PROP_2: int = 30
+PROP_3: int = 15
+PROP_11: int = 15
+PROP_12: int = 30
+ANY_7: int = 4
+ANY_CRAPS: int = 7
+HORN: int = 3  # Variable odds; dependant on event_id
+FIELD: int = 1  # Variable odds; dependant on event_id
