@@ -13,6 +13,7 @@ def test_bin_construction():
 
     zero = Bin()
     zero.add([Outcome("0", 35), five])
+    assert zero.event_id is None
 
     zero_zero = Bin()
     zero_zero.add([Outcome("00", 35)])

@@ -28,3 +28,5 @@ ANY_7: int = 4
 ANY_CRAPS: int = 7
 HORN: int = 3  # Variable odds; dependant on event_id
 FIELD: int = 1  # Variable odds; dependant on event_id
+HARD_6_8: int = 9
+HARD_4_10: int = 7

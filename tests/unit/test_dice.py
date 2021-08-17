@@ -7,6 +7,7 @@ import pytest
 from casino.main import Dice
 
 
+@pytest.mark.usefixtures("do_not_build_throws")
 class TestDice:
     @pytest.fixture(autouse=True)
     def _mock_throws(self, mock_throws):

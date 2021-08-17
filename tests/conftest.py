@@ -86,6 +86,16 @@ def do_not_build_bins(monkey_module):
     monkey_module.setattr(casino.main, "BinBuilder", MockBuilder)
 
 
+class MockThrowBuilder:
+    def build_throws(self, *args):
+        pass
+
+
+@pytest.fixture(scope="module")
+def do_not_build_throws(monkey_module):
+    monkey_module.setattr(casino.main, "ThrowBuilder", MockThrowBuilder)
+
+
 class MockOutcome:
     def __init__(self, name, odds):
         self.name = name
@@ -266,3 +276,16 @@ class MockCrapsGame:
 @pytest.fixture
 def mock_craps_game(monkeypatch):
     monkeypatch.setattr(casino.main, "CrapsGame", MockCrapsGame)
+
+
+class MockRandomEvent:
+    def __init__(self, event_id):
+        self.event_id = event_id
+
+
+@pytest.fixture
+def mock_random_events():
+    return [
+        MockRandomEvent(2),
+        MockRandomEvent(3),
+    ]

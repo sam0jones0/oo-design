@@ -593,7 +593,7 @@ class Dice:
 
     def __init__(self) -> None:
         """Build the dictionary of `Throw` instances."""
-        self.throws = dict()  # TODO: Build `Throw` objects.
+        self.throws = dict()
         self.rng = random.Random()
         self.throw_builder = ThrowBuilder()
         self.throw_builder.build_throws(self)
@@ -802,7 +802,8 @@ class ThrowBuilder:
     odds on Field bets.
 
     Attributes:
-        temp_throws: TODO
+        temp_throws: Temporary dictionary to store `Outcome`s for each dice combination
+            before the final `Throw` object with them.
     """
 
     temp_throws: Dict[Tuple[int, int], List[Outcome]]
@@ -846,37 +847,27 @@ class ThrowBuilder:
                     craps_throw = CrapsThrow(d1, d2, throw_outcomes)
                     dice.throws[(d1, d2)] = craps_throw
 
-                # TODO
-                # elif d_sum in {4, 5, 6, 8, 9, 10}:  # Point.
-                #     if d1 == d2:  # Hard.
-                #         Outcome()
-                #         PointThrow(d1, d2, )
+                elif d_sum in {4, 5, 6, 8, 9, 10}:  # Point.
+                    if d1 == d2:  # Hard.
+                        if d_sum in {4, 10}:
+                            hard_odds = odds.HARD_4_10
+                        else:
+                            hard_odds = odds.HARD_6_8
+                        throw_outcomes.append(Outcome(f"Hard {d_sum}", hard_odds))
+                    else:  # Easy.
+                        # TODO: The appropriate hard number Outcome object is a loser.
+                        throw_outcomes.append(Outcome(f"Easy {d_sum}", 0))
+                    if d_sum in {4, 9, 10}:
+                        throw_outcomes.append(field_o)
+                    dice.throws[(d1, d2)] = PointThrow(d1, d2, throw_outcomes)
 
-    # def gen_prop_throws(self):
-    #     """Generates the 8 one-roll proposition bet `Outcome`s and assigns each
-    #     to the appropriate spot in `self.temp_throws'.
-    #     """
-    #
-    #     # Number 2 proposition.
-    #     self.temp_throws[(1, 1)].append(Outcome("Proposition 2", odds.PROP_2))
-    #
-    #     # Number 3 proposition.
-    #     prop_3_outcome = Outcome("Proposition 3", odds.PROP_3)
-    #     self.temp_throws[(1, 2)].append(prop_3_outcome)
-    #     self.temp_throws[(2, 1)].append(prop_3_outcome)
-    #
-    #     # Number 7 proposition.
-    #     prop_7_outcome = Outcome("Proposition 7", odds.ANY_7)
-    #     for roll in [(1, 6), (2, 5), (3, 4), (4, 3), (5, 2), (6, 1)]:
-    #         self.temp_throws[roll].append(prop_7_outcome)
-    #
-    #     # Number 11 proposition.
-    #     prop_11_outcome = Outcome("Proposition 11", odds.PROP_11)
-    #     self.temp_throws[(5, 6)].append(prop_11_outcome)
-    #     self.temp_throws[(6, 5)].append(prop_11_outcome)
-    #
-    #     # Number 12 proposition.
-    #     self.temp_throws[(6, 6)].append(Outcome("Proposition 12", odds.PROP_12))
+                elif d_sum == 7:  # Natural.
+                    throw_outcomes.append(propositions_o[d_sum])
+                    dice.throws[(d1, d2)] = NaturalThrow(d1, d2, throw_outcomes)
+
+                elif d_sum == 11:  # Eleven.
+                    throw_outcomes.extend([horn_o, field_o, propositions_o[d_sum]])
+                    dice.throws[(d1, d2)] = ElevenThrow(d1, d2, throw_outcomes)
 
 
 class Bet:

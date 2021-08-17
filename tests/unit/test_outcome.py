@@ -1,6 +1,4 @@
-"""
-TODO
-"""
+"""TODO"""
 
 from fractions import Fraction
 
@@ -9,7 +7,7 @@ import pytest
 from casino.main import Outcome
 
 
-def test_outcome():
+def test_outcome(mock_random_events):
     o1 = Outcome("Red", 1)
     o2 = Outcome("Red", 1)
     o3 = Outcome("Black", 2)
@@ -23,10 +21,13 @@ def test_outcome():
 
     assert o1 == o2
     assert o1.odds == Fraction(1, 1)
+    assert o3.odds == Fraction(2, 1)
     assert o1.name == "Red"
     assert o1 != o3
     assert o2 != o3
 
     assert o1.win_amount(10) == 10
+    assert o1.win_amount(10, mock_random_events[0]) == 10
     assert o3.win_amount(10) == 20
+    assert o3.win_amount(10, mock_random_events[1]) == 20
     assert o4.win_amount(10) == 12

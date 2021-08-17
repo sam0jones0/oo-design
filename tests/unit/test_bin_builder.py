@@ -11,7 +11,7 @@ from tests.conftest import MockWheel, MockOutcome
 
 @pytest.mark.usefixtures("patched_builder")
 class TestBinBuilder:
-    def test_using_monkeypatched_fixtures(self, patched_builder):
+    def test_using_monkeypatched_fixtures(self):
         wheel = casino.main.Wheel()
         outcome = casino.main.Outcome("black", 1)
         assert isinstance(wheel, MockWheel)
