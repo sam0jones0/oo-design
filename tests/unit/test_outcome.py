@@ -15,9 +15,9 @@ def test_outcome(mock_random_events):
 
     assert str(o1) == "Red 1:1"
     assert str(o3) == "Black 2:1"
-    assert repr(o2) == "Outcome(name='Red', odds=Fraction(1, 1))"
+    assert repr(o2) == "Outcome(name='Red', outcome_odds=Fraction(1, 1))"
     assert str(o4) == "Craps 6:5"
-    assert repr(o4) == "Outcome(name='Craps', odds=Fraction(6, 5))"
+    assert repr(o4) == "Outcome(name='Craps', outcome_odds=Fraction(6, 5))"
 
     assert o1 == o2
     assert o1.odds == Fraction(1, 1)

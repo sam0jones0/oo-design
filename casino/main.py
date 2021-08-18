@@ -113,9 +113,7 @@ class Outcome:
         return f"{self.name} {self.odds.numerator}:{self.odds.denominator}"
 
     def __repr__(self) -> str:
-        return (
-            f"{self.__class__.__name__}(name={repr(self.name)}, odds={repr(self.odds)})"
-        )
+        return f"{self.__class__.__name__}(name={repr(self.name)}, outcome_odds={repr(self.odds)})"
 
 
 class OutcomeField(Outcome):

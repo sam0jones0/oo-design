@@ -6,7 +6,7 @@ from fractions import Fraction
 import pytest
 
 import casino
-from casino.main import BinBuilder, Wheel
+from casino.main import BinBuilder, Wheel, ThrowBuilder, Dice
 
 
 # Hack for broader scope monkeypatch:
@@ -94,6 +94,14 @@ class MockThrowBuilder:
 @pytest.fixture(scope="module")
 def do_not_build_throws(monkey_module):
     monkey_module.setattr(casino.main, "ThrowBuilder", MockThrowBuilder)
+
+
+@pytest.fixture(scope="module")
+def built_throws(monkey_module):
+    builder = ThrowBuilder()
+    dice = Dice()
+    builder.build_throws(dice)
+    return dice.throws
 
 
 class MockOutcome:

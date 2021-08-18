@@ -11,7 +11,7 @@ def test_outcome_horn(mock_random_events):
     horn_o = OutcomeHorn("Horn", 3)
 
     assert str(horn_o) == "Horn (27:4, 3:1)"
-    assert repr(horn_o) == "OutcomeHorn(name='Horn', odds=Fraction(3, 1))"
+    assert repr(horn_o) == "OutcomeHorn(name='Horn', outcome_odds=Fraction(3, 1))"
 
     assert horn_o.odds == Fraction(3, 1)
     assert horn_o.name == "Horn"
