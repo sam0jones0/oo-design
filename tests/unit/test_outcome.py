@@ -2,16 +2,17 @@
 
 from fractions import Fraction
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-from casino.main import Outcome
+import casino.main
 
 
 def test_outcome(mock_random_events):
-    o1 = Outcome("Red", 1)
-    o2 = Outcome("Red", 1)
-    o3 = Outcome("Black", 2)
-    o4 = Outcome("Craps", Fraction(6, 5))
+    o1 = casino.main.Outcome("Red", 1)
+    o2 = casino.main.Outcome("Red", 1)
+    o3 = casino.main.Outcome("Black", 2)
+    o4 = casino.main.Outcome("Craps", Fraction(6, 5))
 
     assert str(o1) == "Red 1:1"
     assert str(o3) == "Black 2:1"

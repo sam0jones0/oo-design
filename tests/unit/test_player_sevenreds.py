@@ -3,14 +3,14 @@
 import pytest
 
 import casino.main
-from casino.main import SevenReds
+import casino.players
 
 
 def test_sevenreds(monkeypatch, mock_table, mock_bet, mock_outcome):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
-    player = SevenReds(table)
+    player = casino.players.SevenReds(table)
     player.reset(250, 100)
 
     assert player.stake == 100

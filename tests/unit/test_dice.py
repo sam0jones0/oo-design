@@ -4,7 +4,7 @@ import random
 
 import pytest
 
-from casino.main import Dice
+import casino.main
 
 
 @pytest.mark.usefixtures("do_not_build_throws")
@@ -14,7 +14,7 @@ class TestDice:
         self.mock_throws = mock_throws
 
     def test_add(self):
-        dice = Dice()
+        dice = casino.main.Dice()
         for throw in self.mock_throws:
             dice.add_throw(throw)
         assert len(dice.throws) == len(self.mock_throws)
@@ -24,7 +24,7 @@ class TestDice:
     def test_roll_and_get(self):
         rng = random.Random()
         rng.seed(1)
-        dice = Dice()
+        dice = casino.main.Dice()
         dice.rng = rng
         for throw in self.mock_throws:
             dice.add_throw(throw)

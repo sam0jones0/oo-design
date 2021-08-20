@@ -4,7 +4,7 @@ TODO
 
 import pytest
 
-from casino.main import Wheel
+import casino.main
 
 
 @pytest.mark.usefixtures("do_not_build_bins")
@@ -15,7 +15,7 @@ class TestWheel:
 
     def test_add(self):
         o1, o2, o3 = self.mock_outcomes
-        wheel = Wheel()
+        wheel = casino.main.Wheel()
         wheel.add_outcomes(8, [o1])
         wheel.add_outcomes(8, [o2, o3])
 

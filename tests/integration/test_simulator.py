@@ -1,18 +1,20 @@
 """TODO"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-from casino.main import Table, Passenger57, RouletteGame, Simulator
+import casino.main
+import casino.players
 
 
 def test_simulator(seeded_wheel):
     wheel = seeded_wheel
-    table = Table()
+    table = casino.main.Table()
     table.wheel = wheel
-    player = Passenger57(table)
-    game = RouletteGame(table, wheel)
+    player = casino.players.Passenger57(table)
+    game = casino.main.RouletteGame(table, wheel)
 
-    sim = Simulator(game, player)
+    sim = casino.main.Simulator(game, player)
     sim.init_duration = 20
     sim.samples = 20
     sim.gather()

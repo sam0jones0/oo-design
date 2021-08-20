@@ -5,8 +5,7 @@ from fractions import Fraction
 
 import pytest
 
-import casino
-from casino.main import BinBuilder, Wheel, ThrowBuilder, Dice
+import casino.main
 
 
 # Hack for broader scope monkeypatch:
@@ -55,14 +54,14 @@ def seeded_wheel():
     rng = random.Random()
     # First randint(0, 37) with seed of 1 will return 8.
     rng.seed(1)
-    wheel = Wheel()
+    wheel = casino.main.Wheel()
     wheel.rng = rng
     return wheel
 
 
 @pytest.fixture
 def wheel_with_outcomes(mock_outcomes):
-    wheel = Wheel()
+    wheel = casino.main.Wheel()
     wheel.add_outcomes(8, mock_outcomes)
     return wheel
 
@@ -71,9 +70,10 @@ def wheel_with_outcomes(mock_outcomes):
 def patched_builder(monkey_module):
     monkey_module.setattr(casino.main, "Outcome", MockOutcome)
     monkey_module.setattr(casino.main, "Wheel", MockWheel)
-    wheel = Wheel()
+    builder = casino.main.BinBuilder()
+    builder.build_bins(casino.main.Wheel())
 
-    return wheel.bin_builder
+    return builder
 
 
 class MockBuilder:
@@ -98,8 +98,8 @@ def do_not_build_throws(monkey_module):
 
 @pytest.fixture(scope="module")
 def built_throws(monkey_module):
-    builder = ThrowBuilder()
-    dice = Dice()
+    builder = casino.main.ThrowBuilder()
+    dice = casino.main.Dice()
     builder.build_throws(dice)
     return dice.throws
 

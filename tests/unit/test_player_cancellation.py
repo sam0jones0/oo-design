@@ -1,16 +1,17 @@
 """TODO"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
 import casino.main
-from casino.main import PlayerCancellation
+import casino.players
 
 
 def test_player_cancellation(monkeypatch, mock_bet, mock_table):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
-    player = PlayerCancellation(table)
+    player = casino.players.PlayerCancellation(table)
     assert not player.playing()
     player.reset(250, 500)
     assert player.playing()

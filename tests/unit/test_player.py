@@ -1,19 +1,20 @@
 """TODO"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
 import casino.main
-from casino.main import Player
-from tests.conftest import MockTable
+import casino.players
+import tests.conftest
 
 
 def test_player(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     table = casino.main.Table()
-    Player.__abstractmethods__ = set()
-    player = Player(table)
+    casino.players.Player.__abstractmethods__ = set()
+    player = casino.players.Player(table)
 
-    assert isinstance(player.table, MockTable)
+    assert isinstance(player.table, tests.conftest.MockTable)
     assert player.stake == 0
     assert player.rounds_to_go == 0
     assert not player.playing()

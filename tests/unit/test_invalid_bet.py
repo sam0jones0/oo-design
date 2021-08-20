@@ -4,9 +4,9 @@ TODO
 
 import pytest
 
-from casino.main import InvalidBet
+import casino.main
 
 
 def test_invalid_bet():
-    with pytest.raises(InvalidBet):
-        raise InvalidBet
+    with pytest.raises(casino.main.InvalidBet):
+        raise casino.main.InvalidBet

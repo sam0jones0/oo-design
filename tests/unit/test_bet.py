@@ -1,17 +1,18 @@
 """TODO"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-from casino.main import Bet, Outcome
+import casino.main
 
 
 def test_bet():
     """TODO"""
-    o1 = Outcome("foo", 1)
-    o2 = Outcome("bar", 4)
+    o1 = casino.main.Outcome("foo", 1)
+    o2 = casino.main.Outcome("bar", 4)
 
-    b1 = Bet(1, o1)
-    b2 = Bet(1, o2)
+    b1 = casino.main.Bet(1, o1)
+    b2 = casino.main.Bet(1, o2)
 
     assert b1.win_amount() == 2
     assert b2.win_amount() == 5

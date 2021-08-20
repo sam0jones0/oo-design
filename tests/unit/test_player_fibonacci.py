@@ -1,16 +1,17 @@
 """TODO"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
 import casino.main
-from casino.main import PlayerFibonacci
+import casino.players
 
 
 def test_player_fibonacci(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
-    player = PlayerFibonacci(table)
+    player = casino.players.PlayerFibonacci(table)
     player.reset(250, 100)
 
     assert player.stake == 100

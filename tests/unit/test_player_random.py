@@ -1,17 +1,18 @@
 """TODO"""
+
 import random
 
 import pytest
 
 import casino.main
-from casino.main import PlayerRandom
+import casino.players
 
 
 def test_martingale(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
-    player = PlayerRandom(table)
+    player = casino.players.PlayerRandom(table)
     player.rng = random.Random()
     player.rng.seed(1)
     player.reset(250, 100)

@@ -2,8 +2,7 @@
 
 import pytest
 
-import casino
-from casino.main import Throw, CrapsThrow, PointThrow, ElevenThrow, NaturalThrow
+import casino.main
 
 
 class TestThrows:
@@ -16,7 +15,7 @@ class TestThrows:
 
     def test_throw(self):
         """Test the `Throw` superclass."""
-        throw = Throw(1, 6, ["outcome_1"])  # type: ignore
+        throw = casino.main.Throw(1, 6, ["outcome_1"])  # type: ignore
         throw.add(["outcome_2"])  # type: ignore
         assert throw.d1 == 1
         assert throw.d2 == 6
@@ -38,10 +37,10 @@ class TestThrows:
         """Test `Throw` subclass `NaturalThrow`."""
         for d1, d2 in zip([4, 1, 1, 6, 5], [4, 1, 2, 6, 5]):
             with pytest.raises(ValueError):
-                _ = NaturalThrow(d1, d2, "outcome")  # type: ignore
+                _ = casino.main.NaturalThrow(d1, d2, "outcome")  # type: ignore
 
-        nat_throw = NaturalThrow(1, 6, ["outcome_1"])  # type: ignore
-        nat_throw.add(["outcome_2"])  # type: ignore  # type: ignore
+        nat_throw = casino.main.NaturalThrow(1, 6, ["outcome_1"])  # type: ignore
+        nat_throw.add(["outcome_2"])  # type: ignore
         assert nat_throw.d1 == 1
         assert nat_throw.d2 == 6
         assert nat_throw.key == (1, 6)
@@ -63,9 +62,9 @@ class TestThrows:
         """Test `Throw` subclass `CrapsThrow`."""
         for d1, d2 in zip([2, 2, 3, 5, 5], [2, 3, 3, 5, 6]):
             with pytest.raises(ValueError):
-                _ = CrapsThrow(d1, d2, "outcome")  # type: ignore
+                _ = casino.main.CrapsThrow(d1, d2, "outcome")  # type: ignore
 
-        craps_throw = CrapsThrow(1, 1, ["outcome_1"])  # type: ignore
+        craps_throw = casino.main.CrapsThrow(1, 1, ["outcome_1"])  # type: ignore
         craps_throw.add(["outcome_2"])  # type: ignore
         assert craps_throw.d1 == 1
         assert craps_throw.d2 == 1
@@ -89,9 +88,9 @@ class TestThrows:
         """Test `Throw` subclass `ElevenThrow`."""
         for d1, d2 in zip([4, 1, 1, 6, 5], [3, 1, 2, 6, 5]):
             with pytest.raises(ValueError):
-                _ = ElevenThrow(d1, d2, "outcome")  # type: ignore
+                _ = casino.main.ElevenThrow(d1, d2, "outcome")  # type: ignore
 
-        eleven_throw = ElevenThrow(5, 6, ["outcome_1"])  # type: ignore
+        eleven_throw = casino.main.ElevenThrow(5, 6, ["outcome_1"])  # type: ignore
         eleven_throw.add(["outcome_2"])  # type: ignore
         assert eleven_throw.d1 == 5
         assert eleven_throw.d2 == 6
@@ -115,9 +114,9 @@ class TestThrows:
         """Test `Throw` subclass `PointThrow`."""
         for d1, d2 in zip([4, 1, 1, 6, 6], [3, 1, 2, 5, 6]):
             with pytest.raises(ValueError):
-                _ = PointThrow(d1, d2, "outcome")  # type: ignore
+                _ = casino.main.PointThrow(d1, d2, "outcome")  # type: ignore
 
-        point_throw = PointThrow(4, 4, ["outcome_1"])  # type: ignore
+        point_throw = casino.main.PointThrow(4, 4, ["outcome_1"])  # type: ignore
         point_throw.add(["outcome_2"])  # type: ignore
         assert point_throw.d1 == 4
         assert point_throw.d2 == 4

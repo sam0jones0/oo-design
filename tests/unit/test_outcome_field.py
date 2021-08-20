@@ -2,13 +2,14 @@
 
 from fractions import Fraction
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-from casino.main import OutcomeField
+import casino.main
 
 
 def test_outcome_field(mock_random_events):
-    field_o = OutcomeField("Field", 1)
+    field_o = casino.main.OutcomeField("Field", 1)
 
     assert str(field_o) == "Field (1:1, 2 and 12 2:1)"
     assert repr(field_o) == "OutcomeField(name='Field', outcome_odds=Fraction(1, 1))"

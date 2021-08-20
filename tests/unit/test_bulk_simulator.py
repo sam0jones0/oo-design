@@ -2,16 +2,16 @@
 
 from pathlib import Path
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-import casino
-from casino.main import BulkSimulator
+import casino.main
 
 
 def test_bulk_simulator(monkeypatch, tmpdir, mock_game, mock_simulator):
     monkeypatch.setattr(casino.main, "Simulator", mock_simulator)
     game = mock_game()
-    b_sim = BulkSimulator(game)
+    b_sim = casino.main.BulkSimulator(game)
     b_sim.gather_all()
 
     assert len(b_sim.players) == len(b_sim.player_stats)

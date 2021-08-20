@@ -2,13 +2,14 @@
 
 from fractions import Fraction
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-from casino.main import OutcomeHorn
+import casino.main
 
 
 def test_outcome_horn(mock_random_events):
-    horn_o = OutcomeHorn("Horn", 3)
+    horn_o = casino.main.OutcomeHorn("Horn", 3)
 
     assert str(horn_o) == "Horn (27:4, 3:1)"
     assert repr(horn_o) == "OutcomeHorn(name='Horn', outcome_odds=Fraction(3, 1))"

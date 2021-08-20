@@ -1,19 +1,11 @@
 """TODO"""
 
 from collections import Counter
+from fractions import Fraction
 
 import pytest
 
-from casino.main import (
-    CrapsThrow,
-    NaturalThrow,
-    ElevenThrow,
-    PointThrow,
-    Outcome,
-    OutcomeField,
-    OutcomeHorn,
-    Fraction,
-)
+import casino.main
 
 
 @pytest.mark.usefixtures("built_throws")
@@ -22,13 +14,13 @@ class TestThrowBuilder:
         for k, v in built_throws.items():
             key_sum = sum(k)
             if key_sum in {2, 3, 12}:
-                assert isinstance(v, CrapsThrow)
+                assert isinstance(v, casino.main.CrapsThrow)
             elif key_sum == 7:
-                assert isinstance(v, NaturalThrow)
+                assert isinstance(v, casino.main.NaturalThrow)
             elif key_sum == 11:
-                assert isinstance(v, ElevenThrow)
+                assert isinstance(v, casino.main.ElevenThrow)
             else:
-                assert isinstance(v, PointThrow)
+                assert isinstance(v, casino.main.PointThrow)
 
     def test_correct_number_outcomes(self, built_throws):
         count = Counter(
@@ -60,38 +52,77 @@ class TestThrowBuilder:
     def test_random_sample_throws(self, built_throws):
         throw_1 = built_throws[(1, 1)]
         assert len(throw_1.outcomes) == 4
-        assert Outcome(name="Proposition 2", outcome_odds=Fraction(30, 1)) in throw_1
-        assert OutcomeHorn(name="Horn", outcome_odds=Fraction(3, 1)) in throw_1
-        assert OutcomeField(name="Field", outcome_odds=Fraction(1, 1)) in throw_1
-        assert Outcome(name="Craps", outcome_odds=Fraction(7, 1)) in throw_1
+        assert (
+            casino.main.Outcome(name="Proposition 2", outcome_odds=Fraction(30, 1))
+            in throw_1
+        )
+        assert (
+            casino.main.OutcomeHorn(name="Horn", outcome_odds=Fraction(3, 1)) in throw_1
+        )
+        assert (
+            casino.main.OutcomeField(name="Field", outcome_odds=Fraction(1, 1))
+            in throw_1
+        )
+        assert casino.main.Outcome(name="Craps", outcome_odds=Fraction(7, 1)) in throw_1
 
         throw_2 = built_throws[(1, 3)]
         assert len(throw_2.outcomes) == 2
-        assert OutcomeField(name="Field", outcome_odds=Fraction(1, 1)) in throw_2
-        assert Outcome(name="Easy 4", outcome_odds=Fraction(0, 1)) in throw_2
+        assert (
+            casino.main.OutcomeField(name="Field", outcome_odds=Fraction(1, 1))
+            in throw_2
+        )
+        assert (
+            casino.main.Outcome(name="Easy 4", outcome_odds=Fraction(0, 1)) in throw_2
+        )
 
         throw_3 = built_throws[(3, 3)]
         assert len(throw_3.outcomes) == 1
-        assert Outcome(name="Hard 6", outcome_odds=Fraction(9, 1)) in throw_3
+        assert (
+            casino.main.Outcome(name="Hard 6", outcome_odds=Fraction(9, 1)) in throw_3
+        )
 
         throw_4 = built_throws[(4, 3)]
         assert len(throw_4.outcomes) == 1
-        assert Outcome(name="Proposition 7", outcome_odds=Fraction(4, 1)) in throw_4
+        assert (
+            casino.main.Outcome(name="Proposition 7", outcome_odds=Fraction(4, 1))
+            in throw_4
+        )
 
         throw_5 = built_throws[(4, 6)]
         assert len(throw_5.outcomes) == 2
-        assert OutcomeField(name="Field", outcome_odds=Fraction(1, 1)) in throw_5
-        assert Outcome(name="Easy 10", outcome_odds=Fraction(0, 1)) in throw_5
+        assert (
+            casino.main.OutcomeField(name="Field", outcome_odds=Fraction(1, 1))
+            in throw_5
+        )
+        assert (
+            casino.main.Outcome(name="Easy 10", outcome_odds=Fraction(0, 1)) in throw_5
+        )
 
         throw_6 = built_throws[(5, 6)]
         assert len(throw_6.outcomes) == 3
-        assert OutcomeHorn(name="Horn", outcome_odds=Fraction(3, 1)) in throw_6
-        assert OutcomeField(name="Field", outcome_odds=Fraction(1, 1)) in throw_6
-        assert Outcome(name="Proposition 11", outcome_odds=Fraction(15, 1)) in throw_6
+        assert (
+            casino.main.OutcomeHorn(name="Horn", outcome_odds=Fraction(3, 1)) in throw_6
+        )
+        assert (
+            casino.main.OutcomeField(name="Field", outcome_odds=Fraction(1, 1))
+            in throw_6
+        )
+        assert (
+            casino.main.Outcome(name="Proposition 11", outcome_odds=Fraction(15, 1))
+            in throw_6
+        )
 
         throw_7 = built_throws[(6, 6)]
         assert len(throw_7.outcomes) == 4
-        assert Outcome(name="Proposition 12", outcome_odds=Fraction(30, 1)) in throw_7
-        assert OutcomeHorn(name="Horn", outcome_odds=Fraction(3, 1)) in throw_7
-        assert OutcomeField(name="Field", outcome_odds=Fraction(1, 1)) in throw_7
-        assert Outcome(name="Craps", outcome_odds=Fraction(7, 1)) in throw_7
+        assert (
+            casino.main.Outcome(name="Proposition 12", outcome_odds=Fraction(30, 1))
+            in throw_7
+        )
+        assert (
+            casino.main.OutcomeHorn(name="Horn", outcome_odds=Fraction(3, 1)) in throw_7
+        )
+        assert (
+            casino.main.OutcomeField(name="Field", outcome_odds=Fraction(1, 1))
+            in throw_7
+        )
+        assert casino.main.Outcome(name="Craps", outcome_odds=Fraction(7, 1)) in throw_7

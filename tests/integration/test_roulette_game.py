@@ -2,9 +2,11 @@
 TODO
 """
 
+# noinspection PyUnresolvedReferences
 import pytest
 
-from casino.main import BinBuilder, RouletteGame, Passenger57, Table
+import casino.main
+import casino.players
 
 
 def test_game(seeded_wheel):
@@ -15,11 +17,11 @@ def test_game(seeded_wheel):
     [8, 36, 4, 16, 7, 31, 28, 30, 24, 13, 6, 31, 1, 24, 27, 0, 28, 17, 14, 37]
     """
     wheel = seeded_wheel
-    table = Table()
+    table = casino.main.Table()
     table.wheel = wheel
-    player = Passenger57(table)  # Always bets 1 on black.
+    player = casino.players.Passenger57(table)  # Always bets 1 on black.
     player.reset(20, 100)
-    game = RouletteGame(table, wheel)
+    game = casino.main.RouletteGame(table, wheel)
 
     while player.playing():
         game.cycle(player)

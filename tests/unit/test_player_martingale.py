@@ -1,16 +1,17 @@
 """TODO"""
 
+# noinspection PyUnresolvedReferences
 import pytest
 
 import casino.main
-from casino.main import Martingale
+import casino.players
 
 
 def test_martingale(monkeypatch, mock_table, mock_bet):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
-    player = Martingale(table)
+    player = casino.players.Martingale(table)
     player.reset(250, 100)
 
     assert player.stake == 100
