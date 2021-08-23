@@ -14,6 +14,9 @@ def test_bet():
     b1 = casino.main.Bet(1, o1)
     b2 = casino.main.Bet(1, o2)
 
+    assert b1.amount == b1.price() == 1
+    assert b2.amount == b2.price() == 1
+
     assert b1.win_amount() == 2
     assert b2.win_amount() == 5
 

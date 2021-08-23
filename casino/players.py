@@ -109,15 +109,6 @@ class Passenger57(Player):
         super().__init__(table)
         self.black = table.wheel.get_outcome("black")
 
-    def reset(self, duration: int, stake: int) -> None:
-        """Calls parent class reset method.
-
-        Args:
-            duration: The number of `rounds_to_go` for the next session.
-            stake: The initial stake to begin the next session with.
-        """
-        super(Passenger57, self).reset(duration, stake)
-
     def place_bets(self) -> None:
         """Create and place one `Bet` on the 'Black' `Outcome` instance."""
         current_bet = casino.main.Bet(
@@ -128,7 +119,7 @@ class Passenger57(Player):
 
 
 class Martingale(Player):
-    """`Martingale` is a `Player` who places bets in Roulette. This player doubles
+    """`Martingale` is a `Player` subclass who places bets in Roulette. This player doubles
     their bet on every loss and resets their bet to a base amount on each win.
 
     Attributes:
@@ -205,7 +196,7 @@ class Martingale(Player):
 
 
 class SevenReds(Martingale):
-    """This is a `Martingale` player who places bets in roulette. They wait until
+    """This is a `Player` subclass who places bets in roulette. They wait until
     the wheel has spun red seven times in a row before betting on black.
 
     Attributes:
@@ -243,7 +234,7 @@ class SevenReds(Martingale):
 
 
 class PlayerRandom(Player):
-    """A `Player` who places bets in roulette. This player makes random bets
+    """A `Player` subclass who places bets in roulette. This player makes random bets
     around the layout.
 
     Attributes:
@@ -266,7 +257,7 @@ class PlayerRandom(Player):
 
 
 class Player1326(Player):
-    """ "A `Player` who follows the 1-3-2-6 betting system. The player has a preferred
+    """ "A `Player` subclass who follows the 1-3-2-6 betting system. The player has a preferred
     `Outcome` instance. This should be an even money bet. The player also has a
     current betting state that determines the current bet to place, and what next
     state applies when the bet has won or lost.
@@ -406,7 +397,7 @@ class Player1326ThreeWins(Player1326State):
 
 
 class PlayerCancellation(Player):
-    """A `Player` who uses the cancellation betting system. This player allocates
+    """A `Player` subclass who uses the cancellation betting system. This player allocates
     their available budget into a sequence of bets that have an accelerating potential
     gain as well as recouping any losses.
 
@@ -484,7 +475,7 @@ class PlayerCancellation(Player):
 
 
 class PlayerFibonacci(Player):
-    """A `Player` who uses the Fibonacci betting system. This player allocates
+    """A `Player` subclass who uses the Fibonacci betting system. This player allocates
     their available budget into a sequence of bets that have an accelerating
     potential gain.
 

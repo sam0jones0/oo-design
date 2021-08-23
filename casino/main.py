@@ -885,11 +885,70 @@ class Bet:
         """Returns total winnings for this `Bet`, including initial bet `amount`."""
         return self.outcome.win_amount(self.amount) + self.amount
 
+    def price(self) -> int:
+        """Computes the price for this `Bet`. For most bets, this price is the
+        same as `self.amount`. Subclasses can override this to handle bets which
+        include a commission.
+
+        For e.g. In Craps, 'buy' and 'lay' bets include a 5% commission on the
+        potential winnings; a £20 bet has a price of £21.
+
+        Returns:
+            The total cost to place the `Bet`.
+        """
+        return self.amount
+
+    def set_outcome(self, outcome: Outcome) -> None:
+        """Sets the `Outcome` for this `Bet`. This has the effect of moving the
+        bet to another `Outcome`.
+
+        For e.g. this is used in Craps when various line bet `Outcome`s (Pass Line,
+        Come Line, Don't Pass and Don't Come) are either a winner or loser and can
+        be moved to a particular number `Outcome` based on the value of a `PointThrow`.
+
+        Args:
+            outcome: The new `Outcome` instance for this `Bet`.
+        """
+        self.outcome = outcome
+
     def __str__(self) -> str:
         return f"{self.amount} on {self.outcome}"
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
+
+
+class CommissionBet(Bet):
+    """A `Bet` subclass extended to add a commission payment (or vigorish) that
+    determines the price for placing the bet.
+
+    Attributes:
+        comm_pct: Holds the percentage amount of commission. This is almost
+            universally 5%.
+    """
+
+    def __init__(self, amount: int, outcome: Outcome) -> None:
+        """Initialise the bet with it's ``amount`` and ``outcome``."""
+        super(CommissionBet, self).__init__(amount, outcome)
+        self.comm_pct = 5
+
+    def price(self) -> int:
+        """Computes the price for this bet. There are two variations: 'buy'
+        and 'lay' bets.
+
+        Returns:
+            The total cost to place this `CommissionBet`.
+        """
+        if self.outcome.odds.numerator >= self.outcome.odds.denominator:
+            # This is a 'Buy bet'.
+            comm_amount = math.ceil((self.amount / 100) * self.comm_pct)
+            return self.amount + comm_amount
+        else:
+            # This is a 'Lay bet'.
+            comm_amount = math.ceil(
+                ((self.amount * self.outcome.odds) / 100) * self.comm_pct
+            )
+            return self.amount + comm_amount
 
 
 class InvalidBet(Exception):
