@@ -57,7 +57,7 @@ class Player(ABC):
         self.stake = stake
 
     def playing(self) -> bool:
-        """Returns ``True`` while the player is still active."""
+        """Returns `True` while the player is still active."""
         if self.rounds_to_go > 0 and self.stake > 0:
             return True
         else:

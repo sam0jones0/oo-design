@@ -79,7 +79,7 @@ class Outcome:
             other: Another `Outcome` to compare against.
 
         Returns:
-            True if this name matches the ``other``'s name, False otherwise.
+            `True` if this name matches the ``other``'s name, `False` otherwise.
         """
         if not isinstance(other, Outcome):
             return NotImplemented
@@ -92,7 +92,7 @@ class Outcome:
             other: Another `Outcome` to compare against.
 
         Returns:
-            True if this name does not match the ``other``'s name, False otherwise.
+            `True` if this name does not match the ``other``'s name, `False` otherwise.
         """
         if not isinstance(other, Outcome):
             return NotImplemented
@@ -362,7 +362,7 @@ class NaturalThrow(Throw):
         """A natural 7 is odd, and can never be made hardways.
 
         Returns:
-            False: Always.
+            `False`: Always.
         """
         return False
 
@@ -402,7 +402,7 @@ class CrapsThrow(Throw):
         """Craps numbers are never part of hardways bets
 
         Returns:
-            False: Always.
+            `False`: Always.
         """
         return False
 
@@ -445,7 +445,7 @@ class ElevenThrow(Throw):
         """Eleven is odd and is never part of hardways bets.
 
         Returns:
-            False: Always.
+            `False`: Always.
         """
         return False
 
@@ -504,15 +504,14 @@ class Wheel:
     all_outcomes: Dict[str, Outcome]
 
     def __init__(self) -> None:
-        """Creates a new wheel with 38 empty `Bin` instances and then calls on
-        `BinBuilder` to populate them. Also creates a new random number
-        generator instance and a dict to store all possible outcomes.
+        """Creates a new wheel with 38 empty `Bin` instances and then creates an
+        instance of `BinBuilder`. Also creates a new random number generator
+        instance and a dict to store all possible outcomes.
         """
         self.bins = tuple(Bin() for _ in range(38))
         self.all_outcomes = dict()
         self.rng = random.Random()
         self.bin_builder = BinBuilder()
-        self.bin_builder.build_bins(self)
 
     def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
         """Adds the given `Outcomes` to the `Bin` instance with the given number
@@ -1011,7 +1010,7 @@ class Table:
         of all bets is no greater than `self.limit`.
 
         Returns:
-            True, if `Table` state is valid.
+            `True`, if `Table` state is valid.
 
         Raises:
             InvalidBet: The bets don't pass the `Table` limit rules.
@@ -1042,6 +1041,51 @@ class Table:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
+class CrapsTable(Table):
+    """A subclass of `Table` with an association with a `CrapsGame` object.
+
+    As a subclass of the `Table` class, it contains all the `Bet` instances
+    created by the `Player` instance. It also has a betting limit, and the sum
+    of all of a player's bets must be less than or equal to this limit. We
+    assume a single `Player` instance in this simulation.
+
+    Attributes:
+        game: The `CrapsGame` used to determine if a given bet is allowed or working
+            in a particular game state.
+    """
+
+    def __init__(self, game: CrapsGame, *bets: Bet) -> None:
+        """Uses the superclass for initialisation and associates the ``game`` with
+        this table.
+        """
+        super(CrapsTable, self).__init__(*bets)
+        self.game = game
+
+    def is_valid_bet(self, bet: Bet) -> bool:
+        """Validates this bet by checking with the `self.game` instance to see if
+        this bet is valid.
+
+        Args:
+            bet: The bet to validate.
+
+        Returns:
+            `True` if the bet is valid, `False` otherwise.
+        """
+        return self.game.is_allowed(bet.outcome)
+
+    def validate(self) -> bool:
+        """Uses the superclass to see if the sum of all bets is less than or equal
+        to the table limit. Also validates each individual bet.
+
+        Returns:
+            `True` if the table state is valid, `False` otherwise.
+        """
+        for bet in self.bets:
+            if not self.is_valid_bet(bet):
+                return False
+        return super(CrapsTable, self).validate()
+
+
 class CrapsGame:
     """Stub for `CrapsGame`. Contains interface used by the `Throw` class
     hierarchy to implement game state changes.
@@ -1057,6 +1101,46 @@ class CrapsGame:
         """Creates this game. A later version will use a constructor to include
         the `Dice` and `CrapsTable` instances."""
         self.current_point = None
+
+    def is_allowed(self, outcome: Outcome) -> bool:
+        """Determines if the `Outcome` is allowed in the current state of the game.
+
+        When the point is `None`, it is the come out roll, and only 'Pass' and
+        'Don't Pass' are allowed. Otherwise, all bets are allowed.
+
+        Args:
+            outcome: An `Outcome` that may be allowed or not allowed, depending on
+                the game state.
+
+        Returns:
+              `True` if this ``outcome`` is allowed, `False` otherwise.
+        """
+        if self.current_point:
+            return True
+        elif outcome.name in {"Pass", "Don't Pass"}:
+            return True
+
+        return False
+
+    def is_working(self, outcome: Outcome) -> bool:
+        """Determines if the `Outcome` is working/active in the current state of the game.
+
+        When `self.current_point` is `None`, it is the come out roll. Odds bets
+        placed behind any of the six come point numbers are not working.
+
+        Args:
+            outcome: An `Outcome` that may be working/active or not depending on
+                the game state.
+
+        Returns:
+            `True` if the ``outcome`` is working/active, `False` otherwise.
+        """
+        if self.current_point:
+            return True
+        elif "Come Odds" in outcome.name:  # TODO: Check if correct.
+            return False
+
+        return True
 
     def craps(self) -> None:
         """Resolves all current 1-roll bets.
@@ -1220,7 +1304,7 @@ class Simulator:
 
         The `Player` initial `stake` and `cycles_to_go` are set/reset and a full
         game session is completed accordingly by calling the `game.cycle` method
-        until `player.playing()` returns False. The players `stake` after each
+        until `player.playing()` returns `False`. The players `stake` after each
         round of play is recorded.
 
         Returns:
@@ -1373,6 +1457,7 @@ def print_sim_results(sim: Simulator) -> None:
 def main():
     table = Table()
     game = RouletteGame(table, table.wheel)
+    game.wheel.bin_builder.build_bins(table.wheel)
     # # To run a simulation for just one player and print the results:
     player = casino.players.PlayerFibonacci(table)
     sim = Simulator(game, player)
