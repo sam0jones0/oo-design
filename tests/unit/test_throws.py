@@ -25,9 +25,9 @@ class TestThrows:
         assert "outcome_1" in throw.outcomes
         assert "outcome_2" in throw.outcomes
 
-        assert not throw.hard()
+        assert not throw.is_hard()
         throw.d1 = 6
-        assert throw.hard()
+        assert throw.is_hard()
         assert str(throw) == "6, 6"
 
         with pytest.raises(NotImplementedError):
@@ -49,7 +49,7 @@ class TestThrows:
         assert "outcome_1" in nat_throw.outcomes
         assert "outcome_2" in nat_throw.outcomes
 
-        assert not nat_throw.hard()
+        assert not nat_throw.is_hard()
         assert str(nat_throw) == "1, 6"
 
         nat_throw.update_game(self._game)
@@ -74,7 +74,7 @@ class TestThrows:
         assert "outcome_1" in craps_throw.outcomes
         assert "outcome_2" in craps_throw.outcomes
 
-        assert not craps_throw.hard()
+        assert not craps_throw.is_hard()
         assert str(craps_throw) == "1, 1"
 
         assert self._game.current_point is None
@@ -100,7 +100,7 @@ class TestThrows:
         assert "outcome_1" in eleven_throw.outcomes
         assert "outcome_2" in eleven_throw.outcomes
 
-        assert not eleven_throw.hard()
+        assert not eleven_throw.is_hard()
         assert str(eleven_throw) == "5, 6"
 
         assert self._game.current_point is None
@@ -126,9 +126,9 @@ class TestThrows:
         assert "outcome_1" in point_throw.outcomes
         assert "outcome_2" in point_throw.outcomes
 
-        assert point_throw.hard()
+        assert point_throw.is_hard()
         point_throw.d1, point_throw.d2 = 3, 5
-        assert not point_throw.hard()
+        assert not point_throw.is_hard()
         assert str(point_throw) == "3, 5"
 
         point_throw.update_game(self._game)

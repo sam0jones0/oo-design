@@ -18,6 +18,7 @@ from typing import (
     Dict,
     List,
     Type,
+    Set,
     Union,
 )
 
@@ -207,7 +208,8 @@ class RandomEvent:
     `frozenset` directly.
 
     Attributes:
-        outcomes: Any `Outcome`s to add to this `RandomEvent` on instantiation.
+        outcomes: All `Outcome`s associated with this `RandomEvent` to add on
+            instantiation.
         event_id: An integer event identifier to be defined in subclasses.
     """
 
@@ -289,15 +291,26 @@ class Throw(RandomEvent):
     Attributes:
         d1: One of the two die values, from 1 to 6.
         d2: The other of the two die values, from 1 to 6.
-        outcomes: A `frozenset` of one-roll `Outcomes` that win with this throw.
-            These bets are immediately resolved as winners.
         key: The key for this `Throw`. E.g. to locate the `Throw` object in dict
         collections of all throws, such as `Dice.throws`.
         event_id: An integer identifier; the sum of d1 and d2. Used by some `Outcome`
             instances to set variable odds based on a `Throw`'s values.
+        winners: All the outcomes which will be collected as winners for this `Throw`.
+        losers: All the outcomes which will be collected as losers for this `Throw`.
+        win_one_roll: A `set` of one-roll `Outcome`s that win this `Throw`.
+        lose_one_roll: A `set` of one-roll `Outcome`s that lose this `Throw`.
+        win_hardway: A `set` of hardways `Outcome`s that win this `Throw`. Not all
+            throws resolve hardways bets, so this may be empty.
+        lose_hardway: A `set` of hardways `Outcome`s that lose this `Throw`. Not all
+            throws resolve hardways bets, so this may be empty.
     """
 
     key: Tuple[int, int]
+    losers: Set[Outcome]
+    win_one_roll: Set[Outcome]
+    lose_one_roll: Set[Outcome]
+    win_hardway: Set[Outcome]
+    lose_hardway: Set[Outcome]
 
     def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome] = None) -> None:
         """Creates this throw, and associates the given `Outcome` instances that
@@ -307,6 +320,13 @@ class Throw(RandomEvent):
         self.d1 = d1
         self.d2 = d2
         self.key = (d1, d2)
+        # TODO: Are sets of all winners/losers really needed?
+        self.winners = set(self.outcomes) if self.outcomes else set()
+        self.losers = set()
+        self.win_one_roll = set()
+        self.lose_one_roll = set()
+        self.win_hardway = set()
+        self.lose_hardway = set()
 
     @property
     def event_id(self) -> int:
@@ -315,13 +335,77 @@ class Throw(RandomEvent):
             self._event_id = sum(self.key)
         return self._event_id  # type: ignore
 
-    def hard(self) -> bool:
+    def add_one_roll(self, winners: Set[Outcome], losers: Set[Outcome]) -> None:
+        """Adds outcomes to the one-roll winners and losers sets. Also adds those
+        outcomes to overall winners and losers sets.
+
+        Args:
+            winners: All the outcomes which will be paid as winners for this `Throw`.
+            losers: All the outcomes which will be collected as losers for this `Throw`.
+        """
+        self.win_one_roll |= winners
+        self.lose_one_roll |= losers
+        self.winners |= winners
+        self.losers |= losers
+
+    def add_hardways(self, winners: Set[Outcome], losers: Set[Outcome]) -> None:
+        """Adds outcomes to the hardways winners and losers sets. Also adds those
+        outcomes to overall winners and losers sets.
+
+        Args:
+            winners: All the outcomes which will be paid as winners for this `Throw`.
+            losers: All the outcomes which will be collected as losers for this `Throw`.
+        """
+        self.win_hardway |= winners
+        self.lose_hardway |= losers
+        self.winners |= winners
+        self.losers |= losers
+
+    def is_hard(self) -> bool:
         """Helps to determine if hardways bets have been won or lost.
 
         Returns:
             `True` if d1 is equal to d2, `False` otherwise.
         """
         return self.d1 == self.d2
+
+    def resolve_one_roll(self, bet: Bet) -> bool:
+        """Checks if the provided `Bet` is either a one-roll winner, loser or
+        unresolved.
+
+        Args:
+            bet: The bet to be resolved.
+
+        Returns:
+            `True` if the bet can be resolved (win or lose), False if unresolved
+                (neither a winner or loser).
+        """
+        if bet.outcome in self.win_one_roll:
+            # TODO: Pay player object assoc with bet.
+            return True
+        elif bet.outcome in self.lose_one_roll:
+            return True
+
+        return False
+
+    def resolve_hard_ways(self, bet: Bet) -> bool:
+        """Checks if the provided `Bet` is either a hardways winner, loser or
+        unresolved.
+
+        Args:
+            bet: The bet to be resolved.
+
+        Returns:
+            `True` if the bet can be resolved (win or lose), False if unresolved
+                (neither a winner or loser).
+        """
+        if bet.outcome in self.win_hardway:
+            # TODO: Pay player object assoc with bet.
+            return True
+        elif bet.outcome in self.lose_hardway:
+            return True
+
+        return False
 
     def update_game(self, game: "CrapsGame") -> None:
         """Calls one of the `CrapsGame` state change methods: craps(), natural(),
@@ -346,7 +430,7 @@ class NaturalThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome] = None) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` == 7 is
         satisfied.
 
@@ -358,7 +442,7 @@ class NaturalThrow(Throw):
 
         super(NaturalThrow, self).__init__(d1, d2, outcomes)
 
-    def hard(self) -> bool:
+    def is_hard(self) -> bool:
         """A natural 7 is odd, and can never be made hardways.
 
         Returns:
@@ -386,7 +470,7 @@ class CrapsThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome] = None) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` in {2, 3, 12}
         is satisfied.
 
@@ -398,7 +482,7 @@ class CrapsThrow(Throw):
 
         super(CrapsThrow, self).__init__(d1, d2, outcomes)
 
-    def hard(self) -> bool:
+    def is_hard(self) -> bool:
         """Craps numbers are never part of hardways bets
 
         Returns:
@@ -429,7 +513,7 @@ class ElevenThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome] = None) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` == 11
         is satisfied.
 
@@ -441,7 +525,7 @@ class ElevenThrow(Throw):
 
         super(ElevenThrow, self).__init__(d1, d2, outcomes)
 
-    def hard(self) -> bool:
+    def is_hard(self) -> bool:
         """Eleven is odd and is never part of hardways bets.
 
         Returns:
@@ -469,7 +553,7 @@ class PointThrow(Throw):
         d2: The other of the two die values, from 1 to 6.
     """
 
-    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome]) -> None:
+    def __init__(self, d1: int, d2: int, outcomes: Iterable[Outcome] = None) -> None:
         """Creates this `Throw` instance providing the constraint ``d1`` + ``d2`` in
         {4, 5, 6, 8, 9, 10} is satisfied."""
         if d1 + d2 not in {4, 5, 6, 8, 9, 10}:
@@ -800,11 +884,11 @@ class ThrowBuilder:
             before the final `Throw` object with them.
     """
 
-    temp_throws: Dict[Tuple[int, int], List[Outcome]]
+    # temp_throws: Dict[Tuple[int, int], Dict[str, List[Outcome]]]
 
     def __init__(self) -> None:
         """Initialises the `ThrowBuilder`."""
-        self.temp_throws = {(d1, d2): [] for d1 in range(1, 7) for d2 in range(1, 7)}
+        pass
 
     def build_throws(self, dice: Dice) -> None:
         """Creates the 8 one-roll `Outcome` instances (2, 3, 7, 11, 12, Field,
@@ -821,47 +905,70 @@ class ThrowBuilder:
         any_craps_o = Outcome("Craps", casino.odds.ANY_CRAPS)
         horn_o = OutcomeHorn("Horn", casino.odds.HORN)
         field_o = OutcomeField("Field", casino.odds.FIELD)
-        propositions_o = {
+        prop_o = {
             2: Outcome("Proposition 2", casino.odds.PROP_2),
             3: Outcome("Proposition 3", casino.odds.PROP_3),
             7: Outcome("Proposition 7", casino.odds.ANY_7),
             11: Outcome("Proposition 11", casino.odds.PROP_11),
             12: Outcome("Proposition 12", casino.odds.PROP_12),
         }
+        hard_o = {
+            4: Outcome("Hardways 4", casino.odds.HARD_4_10),
+            6: Outcome("Hardways 6", casino.odds.HARD_6_8),
+            8: Outcome("Hardways 8", casino.odds.HARD_6_8),
+            10: Outcome("Hardways 10", casino.odds.HARD_4_10),
+        }
 
         # Enumerate all possible throws and create `Throw`s with their `Outcome`s.
         for d1 in range(1, 7):
             for d2 in range(1, 7):
                 d_sum = d1 + d2
-                throw_outcomes = self.temp_throws[(d1, d2)]
+                winners_one = set()
+                losers_one = set()
+                winners_hard = set()
+                losers_hard = set()
+                # t_outcome_winners = self.temp_throws[(d1, d2)]["winners"]
+                # t_outcome_losers = self.temp_throws[(d1, d2)]["losers"]
 
                 if d_sum in {2, 3, 12}:  # Craps.
-                    throw_outcomes.extend([any_craps_o, horn_o, field_o])
-                    throw_outcomes.append(propositions_o[d_sum])
-                    craps_throw = CrapsThrow(d1, d2, throw_outcomes)
+                    craps_throw = CrapsThrow(d1, d2)
+                    winners_one |= {any_craps_o, horn_o, field_o, prop_o[d_sum]}
+                    losers_one |= {o for o in prop_o.values()} - {prop_o[d_sum]}
+                    craps_throw.add_one_roll(winners_one, losers_one)
                     dice.throws[(d1, d2)] = craps_throw
 
                 elif d_sum in {4, 5, 6, 8, 9, 10}:  # Point.
+                    point_throw = PointThrow(d1, d2)
                     if d1 == d2:  # Hard.
-                        if d_sum in {4, 10}:
-                            hard_odds = casino.odds.HARD_4_10
-                        else:
-                            hard_odds = casino.odds.HARD_6_8
-                        throw_outcomes.append(Outcome(f"Hard {d_sum}", hard_odds))
-                    else:  # Easy.
-                        # TODO: The appropriate hard number Outcome object is a loser.
-                        throw_outcomes.append(Outcome(f"Easy {d_sum}", 0))
-                    if d_sum in {4, 9, 10}:
-                        throw_outcomes.append(field_o)
-                    dice.throws[(d1, d2)] = PointThrow(d1, d2, throw_outcomes)
+                        winners_hard.add(hard_o[d_sum])
+                    elif d_sum in {4, 6, 8, 10}:  # Easy.
+                        losers_hard.add(hard_o[d_sum])
+                    if d_sum in {4, 9, 10}:  # Field.
+                        winners_one.add(field_o)
+                    else:
+                        losers_one.add(field_o)
+                    losers_one |= {o for o in prop_o.values()} | {horn_o, any_craps_o}
+                    point_throw.add_one_roll(winners_one, losers_one)
+                    point_throw.add_hardways(winners_hard, losers_hard)
+                    dice.throws[(d1, d2)] = point_throw
 
                 elif d_sum == 7:  # Natural.
-                    throw_outcomes.append(propositions_o[d_sum])
-                    dice.throws[(d1, d2)] = NaturalThrow(d1, d2, throw_outcomes)
+                    nat_throw = NaturalThrow(d1, d2)
+                    winners_one.add(prop_o[d_sum])
+                    losers_one |= {o for o in prop_o.values()}
+                    losers_one |= {horn_o, any_craps_o, field_o}
+                    losers_hard |= {o for o in hard_o.values()}
+                    nat_throw.add_one_roll(winners_one, losers_one)
+                    nat_throw.add_hardways(winners_hard, losers_hard)
+                    dice.throws[(d1, d2)] = nat_throw
 
                 elif d_sum == 11:  # Eleven.
-                    throw_outcomes.extend([horn_o, field_o, propositions_o[d_sum]])
-                    dice.throws[(d1, d2)] = ElevenThrow(d1, d2, throw_outcomes)
+                    eleven_throw = ElevenThrow(d1, d2)
+                    winners_one |= {horn_o, field_o, prop_o[d_sum]}
+                    losers_one |= {o for o in prop_o.values()} - {prop_o[d_sum]}
+                    losers_one.add(any_craps_o)
+                    eleven_throw.add_one_roll(winners_one, losers_one)
+                    dice.throws[(d1, d2)] = eleven_throw
 
 
 class Bet:
@@ -1117,7 +1224,7 @@ class CrapsGame:
         """
         if self.current_point:
             return True
-        elif outcome.name in {"Pass", "Don't Pass"}:
+        elif outcome.name in {"Pass Line", "Don't Pass Line"}:
             return True
 
         return False
