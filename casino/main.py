@@ -335,6 +335,11 @@ class Throw(RandomEvent):
             self._event_id = sum(self.key)
         return self._event_id  # type: ignore
 
+    def add(self, outcomes: Iterable[Outcome]) -> None:
+        """Ensures any ``outcomes`` added are also added to the `Throw.winners` set."""
+        self.winners |= set(outcomes)
+        super(Throw, self).add(outcomes)
+
     def add_one_roll(self, winners: Set[Outcome], losers: Set[Outcome]) -> None:
         """Adds outcomes to the one-roll winners and losers sets. Also adds those
         outcomes to overall winners and losers sets.
@@ -874,23 +879,20 @@ class BinBuilder:
 
 class ThrowBuilder:
     """Initialises the 36 `Throw` instances, each initialised with the
-    appropriate `Outcome` instances.
+    appropriate winning and losing `Outcome` instances.
 
     Subclasses can override this to reflect different casino-specific rules for
     odds on Field bets.
 
-    Attributes:
-        temp_throws: Temporary dictionary to store `Outcome`s for each dice combination
-            before the final `Throw` object with them.
+    # TODO: Does this really need to be a class?
     """
-
-    # temp_throws: Dict[Tuple[int, int], Dict[str, List[Outcome]]]
 
     def __init__(self) -> None:
         """Initialises the `ThrowBuilder`."""
         pass
 
-    def build_throws(self, dice: Dice) -> None:
+    @staticmethod
+    def build_throws(dice: Dice) -> None:
         """Creates the 8 one-roll `Outcome` instances (2, 3, 7, 11, 12, Field,
         Horn, Any Craps). It then creates each of the 36 `Throw` instances, each
         of which has the appropriate combination of `Outcome` instances. The
@@ -955,7 +957,7 @@ class ThrowBuilder:
                 elif d_sum == 7:  # Natural.
                     nat_throw = NaturalThrow(d1, d2)
                     winners_one.add(prop_o[d_sum])
-                    losers_one |= {o for o in prop_o.values()}
+                    losers_one |= {o for o in prop_o.values()} - {prop_o[7]}
                     losers_one |= {horn_o, any_craps_o, field_o}
                     losers_hard |= {o for o in hard_o.values()}
                     nat_throw.add_one_roll(winners_one, losers_one)

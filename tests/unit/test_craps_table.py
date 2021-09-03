@@ -11,7 +11,7 @@ def test_craps_table():
     table = casino.main.CrapsTable(game)
 
     field_bet = casino.main.Bet(1, casino.main.Outcome("Field", 1))
-    pass_bet = casino.main.Bet(5, casino.main.Outcome("Pass", 1))
+    pass_bet = casino.main.Bet(5, casino.main.Outcome("Pass Line", 1))
 
     # Only 'Pass' and 'Don't Pass' bets are valid when point is off.
     assert not table.is_valid_bet(field_bet)

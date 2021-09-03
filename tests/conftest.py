@@ -97,11 +97,11 @@ def do_not_build_throws(monkey_module):
 
 
 @pytest.fixture(scope="module")
-def built_throws(monkey_module):
+def built_dice(monkey_module):
     builder = casino.main.ThrowBuilder()
     dice = casino.main.Dice()
     builder.build_throws(dice)
-    return dice.throws
+    return dice
 
 
 class MockOutcome:
@@ -158,6 +158,36 @@ def mock_throws():
         MockThrow(5, 5, MockOutcome("bar", 2), MockOutcome("har", 3)),
         MockThrow(1, 3, MockOutcome("foo", 1), MockOutcome("har", 3)),
     ]
+
+
+@pytest.fixture
+def sample_hard_one_outcomes():
+    return {
+        "one_roll": {
+            "winners": {
+                MockOutcome("one_roll_win_1", 1),
+                MockOutcome("one_roll_win_2", 2),
+                MockOutcome("one_roll_win_3", 3),
+            },
+            "losers": {
+                MockOutcome("one_roll_lose_1", 4),
+                MockOutcome("one_roll_lose_2", 5),
+                MockOutcome("one_roll_lose_3", 6),
+            },
+        },
+        "hardways": {
+            "winners": {
+                MockOutcome("hardways_win_1", 7),
+                MockOutcome("hardways_win_2", 8),
+                MockOutcome("hardways_win_3", 9),
+            },
+            "losers": {
+                MockOutcome("hardways_lose_1", 10),
+                MockOutcome("hardways_lose_2", 11),
+                MockOutcome("hardways_lose_3", 12),
+            },
+        },
+    }
 
 
 class MockBet:

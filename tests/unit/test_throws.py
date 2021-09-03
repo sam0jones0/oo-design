@@ -13,7 +13,7 @@ class TestThrows:
         """Use new `MockCrapsGame` instance for each test."""
         self._game = casino.main.CrapsGame()
 
-    def test_throw(self):
+    def test_throw(self, sample_hard_one_outcomes, mock_bet, mock_outcome):
         """Test the `Throw` superclass."""
         throw = casino.main.Throw(1, 6, ["outcome_1"])  # type: ignore
         throw.add(["outcome_2"])  # type: ignore
@@ -24,11 +24,35 @@ class TestThrows:
         assert isinstance(throw.outcomes, frozenset)
         assert "outcome_1" in throw.outcomes
         assert "outcome_2" in throw.outcomes
+        assert set(throw.outcomes) == throw.winners
 
         assert not throw.is_hard()
         throw.d1 = 6
         assert throw.is_hard()
         assert str(throw) == "6, 6"
+
+        one_roll_winners = sample_hard_one_outcomes["one_roll"]["winners"]
+        one_roll_losers = sample_hard_one_outcomes["one_roll"]["losers"]
+        hardways_winners = sample_hard_one_outcomes["hardways"]["winners"]
+        hardways_losers = sample_hard_one_outcomes["hardways"]["losers"]
+        throw.add_one_roll(one_roll_winners, one_roll_losers)
+        throw.add_hardways(hardways_winners, hardways_losers)
+
+        assert throw.win_one_roll == one_roll_winners
+        assert throw.lose_one_roll == one_roll_losers
+        assert throw.win_hardway == hardways_winners
+        assert throw.lose_hardway == hardways_losers
+        assert throw.losers == one_roll_losers | hardways_losers
+        assert len(throw.winners) == 8
+
+        for outcome in one_roll_winners | one_roll_losers:
+            assert throw.resolve_one_roll(mock_bet(10, outcome))
+        for outcome in hardways_winners | hardways_losers:
+            assert throw.resolve_hard_ways(mock_bet(10, outcome))
+
+        a_bet = mock_bet(10, mock_outcome("some outcome", 1))
+        assert not throw.resolve_one_roll(a_bet)
+        assert not throw.resolve_hard_ways(a_bet)
 
         with pytest.raises(NotImplementedError):
             throw.update_game(self._game)
