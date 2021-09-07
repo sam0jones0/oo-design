@@ -26,8 +26,8 @@ def test_player(monkeypatch, mock_table, mock_bet):
 
     assert player.place_bets() == player.place_bets()
 
-    player.win(mock_bet(50, "an_outcome"))
+    player.win(mock_bet(50, "an_outcome", player))
     assert player.stake == 200
 
-    assert player.lose(mock_bet(50, "an_outcome")) is None
+    assert player.lose(mock_bet(50, "an_outcome", player)) is None
     assert player.winners("outcome_set") is None  # type: ignore

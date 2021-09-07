@@ -20,13 +20,13 @@ def test_martingale(monkeypatch, mock_table, mock_bet):
     for _ in range(5):
         player.place_bets()
     assert player.stake == 95
-    player.lose(mock_bet(1, "an_outcome"))
+    player.lose(mock_bet(1, "an_outcome", player))
     assert player.playing()
 
     player.stake = 0
     assert not player.playing()
 
-    player.win(mock_bet(10, "an_outcome"))
+    player.win(mock_bet(10, "an_outcome", player))
     assert player.stake == 20
     assert player.playing()
 

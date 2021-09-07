@@ -1,11 +1,13 @@
 """TODO"""
 
 import random
+from dataclasses import dataclass
 from fractions import Fraction
 
 import pytest
 
 import casino.main
+import casino.players
 
 
 # Hack for broader scope monkeypatch:
@@ -190,19 +192,20 @@ def sample_hard_one_outcomes():
     }
 
 
+@dataclass
 class MockBet:
-    def __init__(self, amount, outcome):
-        self.amount = amount
-        self.outcome = outcome
+    amount: int
+    outcome: casino.main.Outcome
+    player: casino.players.Player
+
+    def win_amount(self):
+        return self.amount * 2
 
     def __str__(self) -> str:
         return f"{self.amount} on {self.outcome}"
 
     def __repr__(self) -> str:
         return f"Bet(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
-
-    def win_amount(self):
-        return self.amount * 2
 
 
 @pytest.fixture
@@ -213,18 +216,18 @@ def mock_bet():
 @pytest.fixture
 def sample_bets():
     return [
-        MockBet(1, MockOutcome("Red", 1)),
-        MockBet(2, MockOutcome("4-1 Split", 4)),
-        MockBet(5, MockOutcome("Dozen 1", 6)),
+        MockBet(1, MockOutcome("Red", 1), mock_player),  # type: ignore
+        MockBet(2, MockOutcome("4-1 Split", 4), mock_player),  # type: ignore
+        MockBet(5, MockOutcome("Dozen 1", 6), mock_player),  # type: ignore
     ]
 
 
 @pytest.fixture
 def invalid_bets():
     return [
-        MockBet(0, MockOutcome("Red", 1)),
-        MockBet(-1, MockOutcome("4-1 Split", 4)),
-        MockBet(100, MockOutcome("Column 1", 6)),
+        MockBet(0, MockOutcome("Red", 1), mock_player),  # type: ignore
+        MockBet(-1, MockOutcome("4-1 Split", 4), mock_player),  # type: ignore
+        MockBet(100, MockOutcome("Column 1", 6), mock_player),  # type: ignore
     ]
 
 
@@ -246,6 +249,9 @@ def mock_table():
 class MockPlayer:
     def __init__(self):
         self.outcome = MockOutcome("Black", 1)
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}()"
 
 
 @pytest.fixture

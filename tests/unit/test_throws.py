@@ -9,12 +9,13 @@ class TestThrows:
     """perform unit tests on the various classes of the `Throw` class hierarchy."""
 
     @pytest.fixture(autouse=True)
-    def _game(self, mock_craps_game):
+    def _game(self, mock_craps_game, mock_player):
         """Use new `MockCrapsGame` instance for each test."""
         self._game = casino.main.CrapsGame()
 
-    def test_throw(self, sample_hard_one_outcomes, mock_bet, mock_outcome):
+    def test_throw(self, sample_hard_one_outcomes, mock_bet, mock_outcome, mock_player):
         """Test the `Throw` superclass."""
+        player = mock_player()
         throw = casino.main.Throw(1, 6, ["outcome_1"])  # type: ignore
         throw.add(["outcome_2"])  # type: ignore
         assert throw.d1 == 1
@@ -46,11 +47,11 @@ class TestThrows:
         assert len(throw.winners) == 8
 
         for outcome in one_roll_winners | one_roll_losers:
-            assert throw.resolve_one_roll(mock_bet(10, outcome))
+            assert throw.resolve_one_roll(mock_bet(10, outcome, player))
         for outcome in hardways_winners | hardways_losers:
-            assert throw.resolve_hard_ways(mock_bet(10, outcome))
+            assert throw.resolve_hard_ways(mock_bet(10, outcome, player))
 
-        a_bet = mock_bet(10, mock_outcome("some outcome", 1))
+        a_bet = mock_bet(10, mock_outcome("some outcome", 1), player)
         assert not throw.resolve_one_roll(a_bet)
         assert not throw.resolve_hard_ways(a_bet)
 

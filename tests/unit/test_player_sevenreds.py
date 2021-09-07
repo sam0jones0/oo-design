@@ -31,7 +31,7 @@ def test_sevenreds(monkeypatch, mock_table, mock_bet, mock_outcome):
     player.place_bets()
     assert player.stake == 99
 
-    player.lose(mock_bet("black", 1))
+    player.lose(mock_bet("black", 1, player))
     assert player.loss_count == 1
     assert player.bet_multiple == 2
 

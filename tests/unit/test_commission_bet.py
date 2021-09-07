@@ -8,13 +8,14 @@ import pytest
 import casino.main
 
 
-def test_bet():
+def test_bet(mock_player):
     """TODO"""
+    player = mock_player()
     o1 = casino.main.Outcome("foo", Fraction(2, 1))
     o2 = casino.main.Outcome("bar", Fraction(2, 3))
 
-    buy_bet = casino.main.CommissionBet(20, o1)
-    lay_bet = casino.main.CommissionBet(30, o2)
+    buy_bet = casino.main.CommissionBet(20, o1, player)
+    lay_bet = casino.main.CommissionBet(30, o2, player)
 
     assert buy_bet.amount == 20
     assert lay_bet.amount == 30
@@ -27,11 +28,11 @@ def test_bet():
 
     assert str(buy_bet) == "20 on foo 2:1"
     assert (
-        repr(buy_bet)
-        == "CommissionBet(amount=20, outcome=Outcome(name='foo', outcome_odds=Fraction(2, 1)))"
+        repr(buy_bet) == "CommissionBet(amount=20, outcome=Outcome(name='foo', "
+        "outcome_odds=Fraction(2, 1)), player=MockPlayer(), comm_pct=5)"
     )
     assert str(lay_bet) == "30 on bar 2:3"
     assert (
-        repr(lay_bet)
-        == "CommissionBet(amount=30, outcome=Outcome(name='bar', outcome_odds=Fraction(2, 3)))"
+        repr(lay_bet) == "CommissionBet(amount=30, outcome=Outcome(name='bar', "
+        "outcome_odds=Fraction(2, 3)), player=MockPlayer(), comm_pct=5)"
     )

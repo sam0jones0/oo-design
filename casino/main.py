@@ -8,6 +8,7 @@ import csv
 import math
 import random
 import typing
+from dataclasses import dataclass
 from fractions import Fraction
 from typing import (
     Tuple,
@@ -895,8 +896,8 @@ class ThrowBuilder:
     def build_throws(dice: Dice) -> None:
         """Creates the 8 one-roll `Outcome` instances (2, 3, 7, 11, 12, Field,
         Horn, Any Craps). It then creates each of the 36 `Throw` instances, each
-        of which has the appropriate combination of `Outcome` instances. The
-        `Throw` instances are assigned to `Dice`.
+        of which has the appropriate combination of winning and losing `Outcome`
+        instances. The `Throw` instances are assigned to `Dice`.
 
         Args:
             dice: The `Dice` instance that must be populated with `Throw`s
@@ -929,8 +930,6 @@ class ThrowBuilder:
                 losers_one = set()
                 winners_hard = set()
                 losers_hard = set()
-                # t_outcome_winners = self.temp_throws[(d1, d2)]["winners"]
-                # t_outcome_losers = self.temp_throws[(d1, d2)]["losers"]
 
                 if d_sum in {2, 3, 12}:  # Craps.
                     craps_throw = CrapsThrow(d1, d2)
@@ -973,6 +972,7 @@ class ThrowBuilder:
                     dice.throws[(d1, d2)] = eleven_throw
 
 
+@dataclass(frozen=False)
 class Bet:
     """A `Bet` on a specific `Outcome`.
 
@@ -982,12 +982,12 @@ class Bet:
     Attributes:
         amount: The amount of the bet.
         outcome: The `Outcome` we're betting on.
+        player: The player who will pay a losing bet or be paid by a winning bet.
     """
 
-    def __init__(self, amount: int, outcome: Outcome) -> None:
-        """Creates a new `Bet` of a specific ``amount`` on a specific ``outcome``."""
-        self.amount = amount
-        self.outcome = outcome
+    amount: int
+    outcome: Outcome
+    player: casino.players.Player
 
     def win_amount(self) -> int:
         """Returns total winnings for this `Bet`, including initial bet `amount`."""
@@ -1023,9 +1023,14 @@ class Bet:
         return f"{self.amount} on {self.outcome}"
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
+        return (
+            f"{self.__class__.__name__}(amount={repr(self.amount)}, "
+            f"outcome={repr(self.outcome)}, "
+            f"player={repr(self.player)})"
+        )
 
 
+@dataclass(frozen=False)
 class CommissionBet(Bet):
     """A `Bet` subclass extended to add a commission payment (or vigorish) that
     determines the price for placing the bet.
@@ -1035,10 +1040,7 @@ class CommissionBet(Bet):
             universally 5%.
     """
 
-    def __init__(self, amount: int, outcome: Outcome) -> None:
-        """Initialise the bet with it's ``amount`` and ``outcome``."""
-        super(CommissionBet, self).__init__(amount, outcome)
-        self.comm_pct = 5
+    comm_pct: int = 5
 
     def price(self) -> int:
         """Computes the price for this bet. There are two variations: 'buy'
@@ -1050,13 +1052,13 @@ class CommissionBet(Bet):
         if self.outcome.odds.numerator >= self.outcome.odds.denominator:
             # This is a 'Buy bet'.
             comm_amount = math.ceil((self.amount / 100) * self.comm_pct)
-            return self.amount + comm_amount
         else:
             # This is a 'Lay bet'.
             comm_amount = math.ceil(
                 ((self.amount * self.outcome.odds) / 100) * self.comm_pct
             )
-            return self.amount + comm_amount
+
+        return self.amount + comm_amount
 
 
 class InvalidBet(Exception):

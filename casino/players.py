@@ -112,7 +112,7 @@ class Passenger57(Player):
     def place_bets(self) -> None:
         """Create and place one `Bet` on the 'Black' `Outcome` instance."""
         current_bet = casino.main.Bet(
-            1, self.black
+            1, self.black, self
         )  # Stake will be >= 1 if self.playing()
         self.table.place_bet(current_bet)
         self.stake -= current_bet.amount
@@ -161,7 +161,9 @@ class Martingale(Player):
         bet_amount = 1 * (2 ** self.loss_count)
         if bet_amount > self.stake:
             bet_amount = self.stake
-        current_bet = casino.main.Bet(bet_amount, self.table.wheel.get_outcome("black"))
+        current_bet = casino.main.Bet(
+            bet_amount, self.table.wheel.get_outcome("black"), self
+        )
         try:
             self.table.place_bet(current_bet)
         except casino.main.InvalidBet:
@@ -251,7 +253,7 @@ class PlayerRandom(Player):
     def place_bets(self) -> None:
         """Updates the `Table` object with a randomly placed `Bet` instance."""
         random_outcome = self.rng.choice(list(self.table.wheel.all_outcomes.values()))
-        current_bet = casino.main.Bet(1, random_outcome)
+        current_bet = casino.main.Bet(1, random_outcome, self)
         self.table.place_bet(current_bet)
         self.stake -= current_bet.amount
 
@@ -339,7 +341,7 @@ class Player1326State:
         Returns:
             The `Bet` to be placed when in this state.
         """
-        return casino.main.Bet(self.bet_amount, self.player.outcome)
+        return casino.main.Bet(self.bet_amount, self.player.outcome, self.player)
 
     def next_won(self) -> "Player1326State":
         """Constructs the new `Player1326State` instance to be used when the bet
@@ -439,7 +441,7 @@ class PlayerCancellation(Player):
         """
         if len(self.sequence) > 1:
             current_bet = casino.main.Bet(
-                self.sequence[0] + self.sequence[-1], self.outcome
+                self.sequence[0] + self.sequence[-1], self.outcome, self
             )
             if current_bet.amount > self.stake:
                 current_bet.amount = self.stake
@@ -506,7 +508,7 @@ class PlayerFibonacci(Player):
     def place_bets(self) -> None:
         """Create and place a `Bet` of a value according to `recent` + `previous`."""
         current_bet = casino.main.Bet(
-            self.recent, self.table.wheel.get_outcome("Black")
+            self.recent, self.table.wheel.get_outcome("Black"), self
         )
         if current_bet.amount > self.stake:
             current_bet.amount = self.stake

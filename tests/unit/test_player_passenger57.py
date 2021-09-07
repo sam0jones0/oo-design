@@ -20,13 +20,13 @@ def test_passenger57(monkeypatch, mock_table, mock_bet):
     assert player.playing()
 
     player.place_bets()
-    player.lose(mock_bet(1, player.black))
+    player.lose(mock_bet(1, player.black, player))
     assert player.stake == 99
 
     player.stake = 0
     assert not player.playing()
 
-    player.win(mock_bet(10, player.black))
+    player.win(mock_bet(10, player.black, player))
     assert player.stake == 20
     assert player.playing()
 

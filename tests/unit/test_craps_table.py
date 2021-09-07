@@ -5,13 +5,14 @@ import pytest
 import casino.main
 
 
-def test_craps_table():
+def test_craps_table(mock_player):
     """TODO"""
     game = casino.main.CrapsGame()
     table = casino.main.CrapsTable(game)
+    player = mock_player()
 
-    field_bet = casino.main.Bet(1, casino.main.Outcome("Field", 1))
-    pass_bet = casino.main.Bet(5, casino.main.Outcome("Pass Line", 1))
+    field_bet = casino.main.Bet(1, casino.main.Outcome("Field", 1), player)
+    pass_bet = casino.main.Bet(5, casino.main.Outcome("Pass Line", 1), player)
 
     # Only 'Pass' and 'Don't Pass' bets are valid when point is off.
     assert not table.is_valid_bet(field_bet)
@@ -29,6 +30,6 @@ def test_craps_table():
     game.current_point = None
     assert not table.validate()
 
-    oversize_bet = casino.main.Bet(99999, casino.main.Outcome("Field", 1))
+    oversize_bet = casino.main.Bet(99999, casino.main.Outcome("Field", 1), player)
     with pytest.raises(casino.main.InvalidBet):
         table.place_bet(oversize_bet)
