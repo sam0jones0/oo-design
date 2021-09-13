@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import random
 from abc import ABC, abstractmethod
-from typing import FrozenSet, Type, List
+from typing import FrozenSet, Type, List, Optional
 
 import casino.main
+import casino.odds
 
 
 class Player(ABC):
@@ -540,3 +541,36 @@ class PlayerFibonacci(Player):
         next_ = self.recent + self.previous
         self.previous = self.recent
         self.recent = next_
+
+
+class CrapsPlayer(Player):
+    """A `Player` for the game of Craps. This player constructs a `Bet` instance
+    based on the `Outcome` instance named 'Pass Line'. This is a very persistent
+    player.
+
+    # TODO: This is stub class to enable CrapsGame to be written. Needs expanding.
+
+    Attributes:
+        pass_line: This is the `Outcome` on which this player focuses their betting.
+            It will be an instance of the 'Pass Line' `Outcome` with 1:1 odds.
+        working_bet: This is the current 'Pass Line' `Bet`. Each time a bet is resolved
+            this is reset to `None`, ensuring only one bet is working at a time.
+        table: The `Table` which collects all bets.
+    """
+    pass_line: casino.main.Outcome
+    working_bet: Optional[casino.main.Bet]
+
+    def __init__(self, table: casino.main.CrapsTable) -> None:
+        """Constructs the `CrapsPlayer` instance with a specific table for placing
+        bets.
+        """
+        super(CrapsPlayer, self).__init__(table)
+        self.pass_line = casino.main.Outcome("Pass Line", casino.odds.PASS_COME)
+        self.working_bet = None
+
+    def place_bets(self) -> None:
+        """Places a new 'Pass Line' `Bet` if there is no current working bet."""
+        if self.working_bet is None:
+            bet = casino.main.Bet(1, self.pass_line, self)
+            self.table.place_bet(bet)
+            self.working_bet = bet

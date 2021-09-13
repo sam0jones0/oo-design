@@ -8,10 +8,9 @@ import casino.players
 import tests.conftest
 
 
-def test_player(monkeypatch, mock_table, mock_bet):
+def test_player(monkeypatch, mock_table, mock_bet, override_player_abstract_methods):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     table = casino.main.Table()
-    casino.players.Player.__abstractmethods__ = set()
     player = casino.players.Player(table)
 
     assert isinstance(player.table, tests.conftest.MockTable)
@@ -31,3 +30,10 @@ def test_player(monkeypatch, mock_table, mock_bet):
 
     assert player.lose(mock_bet(50, "an_outcome", player)) is None
     assert player.winners("outcome_set") is None  # type: ignore
+
+
+def test_player_abstract_methods_reverted(monkeypatch, mock_table):
+    monkeypatch.setattr(casino.main, "Table", mock_table)
+    table = casino.main.Table()
+    with pytest.raises(TypeError):
+        player = casino.players.Player(table)

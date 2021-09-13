@@ -259,6 +259,14 @@ def mock_player():
     return MockPlayer
 
 
+@pytest.fixture
+def override_player_abstract_methods():
+    player_abs_methods = casino.players.Player.__abstractmethods__
+    casino.players.Player.__abstractmethods__ = set()
+    yield
+    casino.players.Player.__abstractmethods__ = player_abs_methods
+
+
 class MockGame:
     def __init__(self):
         self.table = MockTable()

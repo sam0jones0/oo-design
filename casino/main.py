@@ -8,6 +8,7 @@ import csv
 import math
 import random
 import typing
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from fractions import Fraction
 from typing import (
@@ -1330,6 +1331,133 @@ class CrapsGame:
     def __str__(self) -> str:
         """TODO: Update when `CrapsGame` has an internal state."""
         return str(self.current_point) if self.current_point else "Point Off"
+
+
+class CrapsGameState(ABC):
+    """Defines the state-specific behaviour of a Craps game.
+
+    Individual subclasses provide methods used by the `CrapsTable` class to validate
+    bets and determine active bets. Subclasses provide state-specific methods used
+    by a `Throw` object to possibly change the state and resolve bets.
+
+    Attributes:
+        game: The overall `CrapsGame` object for which this is a specific state.
+            From this object, the various next state-change methods can get the
+            `CrapsTable` instance and an `Iterator` over the active `Bet`
+            instances.
+    """
+
+    def __init__(self, game: CrapsGame) -> None:
+        """Saves the overall `CrapsGame` object to which this state applies."""
+        self.game = game
+
+    @abstractmethod
+    def is_valid(self, outcome: Outcome) -> bool:
+        """Returns `True` if this is a valid outcome for creating bets in the current
+        game state.
+
+        Args:
+            outcome: The `Outcome` to be tested for validity.
+        """
+        pass
+
+    @abstractmethod
+    def is_working(self, outcome: Outcome) -> bool:
+        """Returns `True` if this is a working outcome for existing bets in the
+        current game state.
+
+        Args:
+            outcome: The `Outcome` to be tested for if it's working.
+        """
+        pass
+
+    @abstractmethod
+    def craps(self, throw: Throw) -> CrapsGameState:
+        """Return an appropriate state when a 2, 3 or 12 is rolled. It then
+        resolves any game bets.
+
+        Args:
+            throw: The `Throw` that is associated with craps.
+        """
+        pass
+
+    @abstractmethod
+    def natural(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when a 7 is rolled. It then resolves any
+        game bets.
+
+        Args:
+            throw: The `Throw` that is associated with a natural seven.
+        """
+        pass
+
+    @abstractmethod
+    def eleven(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when an 11 is rolled. It then resolves any
+        game bets.
+
+        Args:
+            throw: The `Throw` that is associated with an eleven.
+        """
+
+    @abstractmethod
+    def point(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when the given point number is rolled.
+        It then resolves any game bets.
+
+        Args:
+            throw: The `Throw` that is associated a point number.
+        """
+        pass
+
+    @abstractmethod
+    def point_outcome(self) -> Outcome:
+        """Returns the `Outcome` object based on the current point. This is used
+        to create 'Pass Line Odds' or 'Don't Pass Odds' bets. This delegates the
+        real work to the current `CrapsGameState` object.
+        """
+        pass
+
+    @staticmethod
+    def move_to_throw(bet: Bet, throw: Throw) -> None:
+        """Moves a 'Come Line' or 'Don't Come Line' bet to a new `Outcome` instance
+        based on the current `Throw` instance.
+
+        Args:
+            bet: The `Bet` to update based on the current `Throw`.
+            throw: The `Throw` to which the outcome is changed.
+        """
+        come_point_odds = {
+            "Come Line": {
+                4: [2, 1],
+                5: [3, 2],
+                6: [6, 5],
+                8: [6, 5],
+                9: [3, 2],
+                10: [2, 1],
+            },
+            "Don't Come Line": {
+                4: [1, 2],
+                5: [2, 3],
+                6: [5, 6],
+                8: [5, 6],
+                9: [2, 3],
+                10: [1, 2],
+            },
+        }
+        if isinstance(throw, PointThrow):
+            new_odds = come_point_odds[bet.outcome.name][throw.event_id]
+            new_outcome = Outcome(
+                f"{bet.outcome.name.rstrip('Line').rstrip()} Point {throw.event_id}",
+                Fraction(*new_odds),
+            )
+            bet.set_outcome(new_outcome)
+        else:
+            raise ValueError("throw is not a Point Throw.")
+
+    @abstractmethod
+    def __str__(self) -> str:
+        pass
 
 
 class RouletteGame:
