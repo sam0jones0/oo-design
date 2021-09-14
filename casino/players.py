@@ -557,6 +557,7 @@ class CrapsPlayer(Player):
             this is reset to `None`, ensuring only one bet is working at a time.
         table: The `Table` which collects all bets.
     """
+
     pass_line: casino.main.Outcome
     working_bet: Optional[casino.main.Bet]
 

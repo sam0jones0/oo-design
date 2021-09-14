@@ -11,7 +11,7 @@ class TestThrows:
     @pytest.fixture(autouse=True)
     def _game(self, mock_craps_game, mock_player):
         """Use new `MockCrapsGame` instance for each test."""
-        self._game = casino.main.CrapsGame()
+        self._game = mock_craps_game()
 
     def test_throw(self, sample_hard_one_outcomes, mock_bet, mock_outcome, mock_player):
         """Test the `Throw` superclass."""

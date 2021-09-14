@@ -1446,7 +1446,10 @@ class CrapsGameState(ABC):
             },
         }
         if isinstance(throw, PointThrow):
-            new_odds = come_point_odds[bet.outcome.name][throw.event_id]
+            try:
+                new_odds = come_point_odds[bet.outcome.name][throw.event_id]
+            except KeyError:
+                raise ValueError("bet is not a Come/Don't Come Line bet.")
             new_outcome = Outcome(
                 f"{bet.outcome.name.rstrip('Line').rstrip()} Point {throw.event_id}",
                 Fraction(*new_odds),

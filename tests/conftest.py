@@ -153,6 +153,10 @@ class MockThrow:
         self.key = (d1, d2)
 
 
+def mock_throw():
+    return MockThrow
+
+
 @pytest.fixture
 def mock_throws():
     return [
@@ -200,6 +204,9 @@ class MockBet:
 
     def win_amount(self):
         return self.amount * 2
+
+    def set_outcome(self, outcome):
+        self.outcome = outcome
 
     def __str__(self) -> str:
         return f"{self.amount} on {self.outcome}"
@@ -277,29 +284,6 @@ def mock_game():
     return MockGame
 
 
-class MockSimulator:
-    def __init__(self, *args, **kwargs):
-        self.durations = MockIntegerStatistics()
-        self.maxima = MockIntegerStatistics()
-        self.end_stakes = MockIntegerStatistics()
-
-    def gather(self):
-        return
-
-
-@pytest.fixture
-def mock_simulator():
-    return MockSimulator
-
-
-class MockIntegerStatistics:
-    def mean(self):
-        return 10.1
-
-    def stdev(self):
-        return 1.1
-
-
 class MockCrapsGame:
     def __init__(self):
         self.current_point = None
@@ -327,7 +311,15 @@ class MockCrapsGame:
 
 @pytest.fixture
 def mock_craps_game(monkeypatch):
-    monkeypatch.setattr(casino.main, "CrapsGame", MockCrapsGame)
+    return MockCrapsGame
+
+
+@pytest.fixture
+def override_craps_game_state_abs_methods():
+    craps_game_state_abs_methods = casino.main.CrapsGameState.__abstractmethods__
+    casino.main.CrapsGameState.__abstractmethods__ = set()
+    yield
+    casino.main.CrapsGameState.__abstractmethods__ = craps_game_state_abs_methods
 
 
 class MockRandomEvent:
@@ -341,3 +333,26 @@ def mock_random_events():
         MockRandomEvent(2),
         MockRandomEvent(3),
     ]
+
+
+class MockSimulator:
+    def __init__(self, *args, **kwargs):
+        self.durations = MockIntegerStatistics()
+        self.maxima = MockIntegerStatistics()
+        self.end_stakes = MockIntegerStatistics()
+
+    def gather(self):
+        return
+
+
+@pytest.fixture
+def mock_simulator():
+    return MockSimulator
+
+
+class MockIntegerStatistics:
+    def mean(self):
+        return 10.1
+
+    def stdev(self):
+        return 1.1
