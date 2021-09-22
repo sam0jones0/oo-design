@@ -388,7 +388,7 @@ class Throw(RandomEvent):
                 (neither a winner or loser).
         """
         if bet.outcome in self.win_one_roll:
-            # TODO: Pay player object assoc with bet.
+            bet.player.stake += bet.win_amount()  # TODO: Should payout be done here?
             return True
         elif bet.outcome in self.lose_one_roll:
             return True
@@ -407,7 +407,7 @@ class Throw(RandomEvent):
                 (neither a winner or loser).
         """
         if bet.outcome in self.win_hardway:
-            # TODO: Pay player object assoc with bet.
+            bet.player.stake += bet.win_amount()  # TODO: Should payout be done here?
             return True
         elif bet.outcome in self.lose_hardway:
             return True
@@ -1411,10 +1411,11 @@ class CrapsGameState(ABC):
         pass
 
     @abstractmethod
-    def point_outcome(self) -> Outcome:
-        """Returns the `Outcome` object based on the current point. This is used
-        to create 'Pass Line Odds' or 'Don't Pass Odds' bets. This delegates the
-        real work to the current `CrapsGameState` object.
+    def point_outcome(self) -> Optional[Fraction]:
+        """Returns a `Fraction` object representing the odds for Pass/Don't Pass
+        odds bets based on the current point. This is used to create 'Pass Line
+        Odds' or 'Don't Pass Odds' bets. This delegates the real work to the
+        current `CrapsGameState` object.
         """
         pass
 
@@ -1427,32 +1428,10 @@ class CrapsGameState(ABC):
             bet: The `Bet` to update based on the current `Throw`.
             throw: The `Throw` to which the outcome is changed.
         """
-        come_point_odds = {
-            "Come Line": {
-                4: [2, 1],
-                5: [3, 2],
-                6: [6, 5],
-                8: [6, 5],
-                9: [3, 2],
-                10: [2, 1],
-            },
-            "Don't Come Line": {
-                4: [1, 2],
-                5: [2, 3],
-                6: [5, 6],
-                8: [5, 6],
-                9: [2, 3],
-                10: [1, 2],
-            },
-        }
         if isinstance(throw, PointThrow):
-            try:
-                new_odds = come_point_odds[bet.outcome.name][throw.event_id]
-            except KeyError:
-                raise ValueError("bet is not a Come/Don't Come Line bet.")
             new_outcome = Outcome(
                 f"{bet.outcome.name.rstrip('Line').rstrip()} Point {throw.event_id}",
-                Fraction(*new_odds),
+                casino.odds.PASS_COME,
             )
             bet.set_outcome(new_outcome)
         else:
@@ -1461,6 +1440,286 @@ class CrapsGameState(ABC):
     @abstractmethod
     def __str__(self) -> str:
         pass
+
+
+class CrapsGamePointOff(CrapsGameState):
+    """Defines the unique behaviour of the Craps game when the point is off.
+
+    It defines the allowed bets and active bets. It provides methods used by a
+    `Throw` instance to change the change and resolve bets.
+
+    Attributes:
+        game: The overall `CrapsGame` object for which this is a specific state.
+            From this object, the various next state-change methods can get the
+            `CrapsTable` instance and an `Iterator` over the active `Bet`
+            instances.
+    """
+
+    def __init__(self, game: CrapsGame) -> None:
+        """Uses the superclass constructor to save the overall `CrapsGame` object."""
+        super(CrapsGamePointOff, self).__init__(game)
+
+    def is_valid(self, outcome: Outcome) -> bool:
+        """Returns `True` if this is a valid outcome for creating bets in the current
+        game state.
+
+        Args:
+            outcome: The `Outcome` to be tested for validity.
+        """
+        return outcome.name in {"Pass Line", "Don't Pass Line"}
+
+    def is_working(self, outcome: Outcome) -> bool:
+        """Returns `True` if this is a working outcome for existing bets in the
+        current game state.
+
+        Args:
+            outcome: The `Outcome` to be tested for if it's working.
+        """
+        return outcome.name not in {
+            "Come Odds 4",
+            "Come Odds 5",
+            "Come Odds 6",
+            "Come Odds 8",
+            "Come Odds 9",
+            "Come Odds 10",
+        }
+
+    def craps(self, throw: Throw) -> CrapsGameState:
+        """Return an appropriate state when a 2, 3 or 12 is rolled and resolves
+        any game bets.
+
+        Args:
+            throw: The `Throw` that is associated with craps.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name == "Pass Line":
+                bet.player.lose(bet)
+                table_bets.remove(bet)
+            elif bet.outcome.name == "Don't Pass Line":
+                if throw.event_id == 12:
+                    # Push (a draw; bet is cancelled and wager returned).
+                    bet.player.stake += bet.amount
+                    table_bets.remove(bet)
+                else:
+                    bet.player.win(bet)
+                    table_bets.remove(bet)
+
+        return self
+
+    def natural(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when a 7 is rolled and resolves any
+        game bets.
+
+        Args:
+            throw: The `Throw` that is associated with a natural seven.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name == "Pass Line":
+                bet.player.win(bet)
+                table_bets.remove(bet)
+            elif bet.outcome.name == "Don't Pass Line":
+                bet.player.lose(bet)
+                table_bets.remove(bet)
+
+        return self
+
+    def eleven(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when an 11 is rolled and resolves any
+        game bets.
+
+        Args:
+            throw: The `Throw` that is associated with an eleven.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name == "Pass Line":
+                bet.player.win(bet)
+                table_bets.remove(bet)
+            elif bet.outcome.name == "Don't Pass Line":
+                bet.player.lose(bet)
+                table_bets.remove(bet)
+
+        return self
+
+    def point(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when the given point number is rolled
+        and resolves any game bets.
+
+        Args:
+            throw: The `Throw` that is associated a point number.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name in {
+                f"Come Point {throw.event_id}",
+                f"Don't Come Point {throw.event_id}",
+            }:  # Push.
+                bet.player.stake += bet.amount
+                table_bets.remove(bet)
+
+        return CrapsGamePointOn(throw.event_id, self.game)
+
+    def point_outcome(self) -> Optional[Fraction]:
+        """Returns a `Fraction` object representing the odds for Pass/Don't Pass
+        odds bets based on the current point. This is used to create 'Pass Line
+        Odds' or 'Don't Pass Odds' bets. This delegates the real work to the
+        current `CrapsGameState` object.
+        """
+        return None
+
+    def __str__(self) -> str:
+        return "The Point Is Off."
+
+
+class CrapsGamePointOn(CrapsGameState):
+    """Defines the behaviour of the Craps game when the point is on. It defines
+    the allowed bets and the active bets. It provides methods used by a `Throw`
+    object to change the state and resolve bets.
+
+    Attributes:
+        game: The overall `CrapsGame` object for which this is a specific state.
+            From this object, the various next state-change methods can get the
+            `CrapsTable` instance and an `Iterator` over the active `Bet`
+            instances.
+        point: The point set by the current `Throw` instance.
+    """
+
+    def __init__(self, point: int, game: CrapsGame) -> None:
+        """Uses the superclass constructor to save the overall `CrapsGame` object,
+        and sets the point value for this state.
+        """
+        super(CrapsGamePointOn, self).__init__(game)
+        self.point = point
+
+    def is_valid(self, outcome: Outcome) -> bool:
+        """Returns `True` if this is a valid outcome for creating bets in the current
+        game state.
+
+        Args:
+            outcome: The `Outcome` to be tested for validity.
+        """
+        return outcome.name not in {f"Buy {self.point}", f"Lay {self.point}"}
+
+    def is_working(self, outcome: Outcome) -> bool:
+        """Returns `True` if this is a working outcome for existing bets in the
+        current game state.
+
+        Args:
+            outcome: The `Outcome` to be tested for if it's working.
+        """
+        return True
+
+    def craps(self, throw: Throw) -> CrapsGameState:
+        """Return an appropriate state when a 2, 3 or 12 is rolled and resolves
+        any game bets.
+
+        Args:
+            throw: The `Throw` that is associated with craps.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name == "Don't Come Line":
+                bet.player.win(bet)
+                table_bets.remove(bet)
+            elif bet.outcome.name == "Come Line":
+                bet.player.lose(bet)
+                table_bets.remove(bet)
+
+        return self
+
+    def natural(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when a 7 is rolled and resolves any
+        game bets.
+
+        Args:
+            throw: The `Throw` that is associated with a natural seven.
+        """
+        winners = {"Don't Pass Line", "Don't Pass Odds", "Come Line"}
+        winners |= {f"Don't Come Point {i}" for i in (4, 5, 6, 8, 9, 10)}
+        winners |= {f"Don't Come Point {i} Odds" for i in (4, 5, 6, 8, 9, 10)}
+        losers = {"Pass Line", "Pass Line Odds", "Don't Come Line"}
+        losers |= {f"Come Point {i}" for i in (4, 5, 6, 8, 9, 10)}
+        losers |= {f"Come Point {i} Odds" for i in (4, 5, 6, 8, 9, 10)}
+
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name in winners:
+                bet.player.win(bet)
+                table_bets.remove(bet)
+            elif bet.outcome.name in losers:
+                bet.player.lose(bet)
+                table_bets.remove(bet)
+
+        return CrapsGamePointOff(self.game)
+
+    def eleven(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when an 11 is rolled and resolves any
+        game bets.
+
+        Args:
+            throw: The `Throw` that is associated with an eleven.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if bet.outcome.name == "Come Line":
+                bet.player.win(bet)
+                table_bets.remove(bet)
+            elif bet.outcome.name == "Don't Come Line":
+                bet.player.lose(bet)
+                table_bets.remove(bet)
+
+        return self
+
+    def point(self, throw: Throw) -> CrapsGameState:
+        """Returns an appropriate state when the given point number is rolled
+        and resolves any game bets.
+
+        Args:
+            throw: The `Throw` that is associated a point number.
+        """
+        table_bets = self.game.table.bets
+        for bet in table_bets[:]:
+            if throw.event_id == self.point:
+                if bet.outcome.name in {"Pass Line", "Pass Line Odds"}:
+                    bet.player.win(bet)
+                    table_bets.remove(bet)
+                elif bet.outcome.name in {"Don't Pass Line", "Don't Pass Odds"}:
+                    bet.player.lose(bet)
+                    table_bets.remove(bet)
+            else:
+                if bet.outcome.name in {
+                    f"Come Point {throw.event_id}",
+                    f"Come Point {throw.event_id} Odds",
+                }:
+                    bet.player.win(bet)
+                    table_bets.remove(bet)
+                elif bet.outcome.name in {
+                    f"Don't Come Point {throw.event_id}",
+                    f"Don't Come Point {throw.event_id} Odds",
+                }:
+                    bet.player.lose(bet)
+                    table_bets.remove(bet)
+
+            if bet.outcome.name in {"Come Line", "Don't Come Line"}:
+                self.move_to_throw(bet, throw)
+
+        return CrapsGamePointOff(self.game)
+
+    def point_outcome(self) -> Optional[Fraction]:
+        """Returns a `Fraction` object representing the odds for Pass/Don't Pass
+        odds bets based on the current point. This is used to create 'Pass Line
+        Odds' or 'Don't Pass Odds' bets. This delegates the real work to the
+        current `CrapsGameState` object.
+        """
+
+        odds = {4: (2, 1), 10: (2, 1), 5: (3, 2), 9: (3, 2), 6: (6, 5), 8: (6, 5)}
+
+        return Fraction(*odds[self.point])
+
+    def __str__(self) -> str:
+        return f"The point is {self.point}"
 
 
 class RouletteGame:

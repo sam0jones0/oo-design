@@ -573,5 +573,6 @@ class CrapsPlayer(Player):
         """Places a new 'Pass Line' `Bet` if there is no current working bet."""
         if self.working_bet is None:
             bet = casino.main.Bet(1, self.pass_line, self)
+            # FIXME: bet.price is not yet deducted from player.stake.
             self.table.place_bet(bet)
             self.working_bet = bet
