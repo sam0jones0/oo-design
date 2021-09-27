@@ -9,9 +9,9 @@ class TestThrows:
     """perform unit tests on the various classes of the `Throw` class hierarchy."""
 
     @pytest.fixture(autouse=True)
-    def _game(self, mock_craps_game, mock_player):
+    def _game(self, mock_craps_game, mock_player, mock_table):
         """Use new `MockCrapsGame` instance for each test."""
-        self._game = mock_craps_game()
+        self._game = mock_craps_game(mock_table())
 
     def test_throw(self, sample_hard_one_outcomes, mock_bet, mock_outcome, mock_player):
         """Test the `Throw` superclass."""

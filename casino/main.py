@@ -1166,11 +1166,17 @@ class CrapsTable(Table):
             in a particular game state.
     """
 
-    def __init__(self, game: CrapsGame, *bets: Bet) -> None:
+    game: Optional[CrapsGame]
+
+    def __init__(self, *bets: Bet) -> None:
         """Uses the superclass for initialisation and associates the ``game`` with
         this table.
         """
         super(CrapsTable, self).__init__(*bets)
+        self.game = None
+
+    def set_game(self, game: CrapsGame) -> None:
+        """Saves the given CrapsGame instance to be used to validate bets."""
         self.game = game
 
     def is_valid_bet(self, bet: Bet) -> bool:
@@ -1183,6 +1189,10 @@ class CrapsTable(Table):
         Returns:
             `True` if the bet is valid, `False` otherwise.
         """
+        if self.game is None:
+            raise AttributeError(
+                "You need to set the game for this table: CrapsTable.set_game(game)"
+            )
         return self.game.is_allowed(bet.outcome)
 
     def validate(self) -> bool:
@@ -1209,10 +1219,11 @@ class CrapsGame:
 
     current_point: Optional[int]
 
-    def __init__(self) -> None:
+    def __init__(self, table: CrapsTable) -> None:
         """Creates this game. A later version will use a constructor to include
         the `Dice` and `CrapsTable` instances."""
         self.current_point = None
+        self.table = table
 
     def is_allowed(self, outcome: Outcome) -> bool:
         """Determines if the `Outcome` is allowed in the current state of the game.
@@ -1411,7 +1422,7 @@ class CrapsGameState(ABC):
         pass
 
     @abstractmethod
-    def point_outcome(self) -> Optional[Fraction]:
+    def point_outcome_odds(self) -> Optional[Fraction]:
         """Returns a `Fraction` object representing the odds for Pass/Don't Pass
         odds bets based on the current point. This is used to create 'Pass Line
         Odds' or 'Don't Pass Odds' bets. This delegates the real work to the
@@ -1428,7 +1439,10 @@ class CrapsGameState(ABC):
             bet: The `Bet` to update based on the current `Throw`.
             throw: The `Throw` to which the outcome is changed.
         """
-        if isinstance(throw, PointThrow):
+        if isinstance(throw, PointThrow) and bet.outcome.name in {
+            "Come Line",
+            "Don't Come Line",
+        }:
             new_outcome = Outcome(
                 f"{bet.outcome.name.rstrip('Line').rstrip()} Point {throw.event_id}",
                 casino.odds.PASS_COME,
@@ -1476,12 +1490,12 @@ class CrapsGamePointOff(CrapsGameState):
             outcome: The `Outcome` to be tested for if it's working.
         """
         return outcome.name not in {
-            "Come Odds 4",
-            "Come Odds 5",
-            "Come Odds 6",
-            "Come Odds 8",
-            "Come Odds 9",
-            "Come Odds 10",
+            "Come Point 4 Odds",
+            "Come Point 5 Odds",
+            "Come Point 6 Odds",
+            "Come Point 8 Odds",
+            "Come Point 9 Odds",
+            "Come Point 10 Odds",
         }
 
     def craps(self, throw: Throw) -> CrapsGameState:
@@ -1555,13 +1569,15 @@ class CrapsGamePointOff(CrapsGameState):
             if bet.outcome.name in {
                 f"Come Point {throw.event_id}",
                 f"Don't Come Point {throw.event_id}",
+                f"Come Point {throw.event_id} Odds",
+                f"Don't Come Point {throw.event_id} Odds",
             }:  # Push.
                 bet.player.stake += bet.amount
                 table_bets.remove(bet)
 
         return CrapsGamePointOn(throw.event_id, self.game)
 
-    def point_outcome(self) -> Optional[Fraction]:
+    def point_outcome_odds(self) -> Optional[Fraction]:
         """Returns a `Fraction` object representing the odds for Pass/Don't Pass
         odds bets based on the current point. This is used to create 'Pass Line
         Odds' or 'Don't Pass Odds' bets. This delegates the real work to the
@@ -1591,7 +1607,7 @@ class CrapsGamePointOn(CrapsGameState):
         and sets the point value for this state.
         """
         super(CrapsGamePointOn, self).__init__(game)
-        self.point = point
+        self.current_point = point
 
     def is_valid(self, outcome: Outcome) -> bool:
         """Returns `True` if this is a valid outcome for creating bets in the current
@@ -1600,7 +1616,12 @@ class CrapsGamePointOn(CrapsGameState):
         Args:
             outcome: The `Outcome` to be tested for validity.
         """
-        return outcome.name not in {f"Buy {self.point}", f"Lay {self.point}"}
+        return outcome.name not in {
+            f"Buy {self.current_point}",
+            f"Lay {self.current_point}",
+            "Pass Line",
+            "Don't Pass Line",
+        }
 
     def is_working(self, outcome: Outcome) -> bool:
         """Returns `True` if this is a working outcome for existing bets in the
@@ -1639,7 +1660,7 @@ class CrapsGamePointOn(CrapsGameState):
         winners = {"Don't Pass Line", "Don't Pass Odds", "Come Line"}
         winners |= {f"Don't Come Point {i}" for i in (4, 5, 6, 8, 9, 10)}
         winners |= {f"Don't Come Point {i} Odds" for i in (4, 5, 6, 8, 9, 10)}
-        losers = {"Pass Line", "Pass Line Odds", "Don't Come Line"}
+        losers = {"Pass Line", "Pass Odds", "Don't Come Line"}
         losers |= {f"Come Point {i}" for i in (4, 5, 6, 8, 9, 10)}
         losers |= {f"Come Point {i} Odds" for i in (4, 5, 6, 8, 9, 10)}
 
@@ -1681,8 +1702,8 @@ class CrapsGamePointOn(CrapsGameState):
         """
         table_bets = self.game.table.bets
         for bet in table_bets[:]:
-            if throw.event_id == self.point:
-                if bet.outcome.name in {"Pass Line", "Pass Line Odds"}:
+            if throw.event_id == self.current_point:
+                if bet.outcome.name in {"Pass Line", "Pass Odds"}:
                     bet.player.win(bet)
                     table_bets.remove(bet)
                 elif bet.outcome.name in {"Don't Pass Line", "Don't Pass Odds"}:
@@ -1707,7 +1728,7 @@ class CrapsGamePointOn(CrapsGameState):
 
         return CrapsGamePointOff(self.game)
 
-    def point_outcome(self) -> Optional[Fraction]:
+    def point_outcome_odds(self) -> Optional[Fraction]:
         """Returns a `Fraction` object representing the odds for Pass/Don't Pass
         odds bets based on the current point. This is used to create 'Pass Line
         Odds' or 'Don't Pass Odds' bets. This delegates the real work to the
@@ -1716,10 +1737,10 @@ class CrapsGamePointOn(CrapsGameState):
 
         odds = {4: (2, 1), 10: (2, 1), 5: (3, 2), 9: (3, 2), 6: (6, 5), 8: (6, 5)}
 
-        return Fraction(*odds[self.point])
+        return Fraction(*odds[self.current_point])
 
     def __str__(self) -> str:
-        return f"The point is {self.point}"
+        return f"The point is {self.current_point}"
 
 
 class RouletteGame:

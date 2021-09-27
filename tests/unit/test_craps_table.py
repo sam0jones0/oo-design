@@ -7,8 +7,9 @@ import casino.main
 
 def test_craps_table(mock_player):
     """TODO"""
-    game = casino.main.CrapsGame()
-    table = casino.main.CrapsTable(game)
+    table = casino.main.CrapsTable()
+    game = casino.main.CrapsGame(table)
+    table.set_game(game)
     player = mock_player()
 
     field_bet = casino.main.Bet(1, casino.main.Outcome("Field", 1), player)

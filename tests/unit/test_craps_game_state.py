@@ -21,20 +21,16 @@ def test_craps_game_state(
     monkeypatch.setattr(casino.main, "CrapsGame", mock_craps_game)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
 
-    game = casino.main.CrapsGame()
+    game = casino.main.CrapsGame("table")
     assert isinstance(game, tests.conftest.MockCrapsGame)
     player = mock_player()
     craps_game_state = casino.main.CrapsGameState(game)  # type: ignore
 
-    come_bet = casino.main.Bet(
-        10, casino.main.Outcome("Come Line", casino.odds.PASS_COME), player
-    )
+    come_bet = casino.main.Bet(10, casino.main.Outcome("Come Line", 1), player)
     dont_come_bet = casino.main.Bet(
-        20, casino.main.Outcome("Don't Come Line", casino.odds.DONT_PASS_COME), player
+        20, casino.main.Outcome("Don't Come Line", 1), player
     )
-    pass_bet = casino.main.Bet(
-        30, casino.main.Outcome("Pass Line", casino.odds.PASS_COME), player
-    )
+    pass_bet = casino.main.Bet(30, casino.main.Outcome("Pass Line", 1), player)
     non_point_throw = casino.main.CrapsThrow(1, 2)
     point_throw = casino.main.PointThrow(5, 3)
 
@@ -47,15 +43,15 @@ def test_craps_game_state(
 
     craps_game_state.move_to_throw(come_bet, point_throw)
     assert come_bet.outcome.name == "Come Point 8"
-    assert come_bet.outcome.odds == Fraction(6, 5)
+    assert come_bet.outcome.odds == Fraction(1, 1)
 
     craps_game_state.move_to_throw(dont_come_bet, point_throw)
     assert dont_come_bet.outcome.name == "Don't Come Point 8"
-    assert dont_come_bet.outcome.odds == Fraction(5, 6)
+    assert dont_come_bet.outcome.odds == Fraction(1, 1)
 
 
 def test_craps_game_state_abstract_methods_reverted(monkeypatch, mock_craps_game):
     monkeypatch.setattr(casino.main, "CrapsGame", mock_craps_game)
-    game = casino.main.CrapsGame()
+    game = casino.main.CrapsGame("table")
     with pytest.raises(TypeError):
         craps_game_state = casino.main.CrapsGameState(game)

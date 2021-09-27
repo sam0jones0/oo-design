@@ -152,7 +152,12 @@ class MockThrow:
         self.outcomes = frozenset(outcomes)
         self.key = (d1, d2)
 
+    @property
+    def event_id(self):
+        return self.d1 + self.d2
 
+
+@pytest.fixture
 def mock_throw():
     return MockThrow
 
@@ -212,7 +217,7 @@ class MockBet:
         return f"{self.amount} on {self.outcome}"
 
     def __repr__(self) -> str:
-        return f"Bet(amount={repr(self.amount)}, outcome={repr(self.outcome)})"
+        return f"Bet(amount={repr(self.amount)}, Outcome={repr(self.outcome)})"
 
 
 @pytest.fixture
@@ -223,23 +228,31 @@ def mock_bet():
 @pytest.fixture
 def sample_bets():
     return [
-        MockBet(1, MockOutcome("Red", 1), mock_player),  # type: ignore
-        MockBet(2, MockOutcome("4-1 Split", 4), mock_player),  # type: ignore
-        MockBet(5, MockOutcome("Dozen 1", 6), mock_player),  # type: ignore
+        MockBet(1, MockOutcome("Red", 1), MockPlayer()),  # type: ignore
+        MockBet(2, MockOutcome("4-1 Split", 4), MockPlayer()),  # type: ignore
+        MockBet(5, MockOutcome("Dozen 1", 6), MockPlayer()),  # type: ignore
     ]
 
 
 @pytest.fixture
 def invalid_bets():
     return [
-        MockBet(0, MockOutcome("Red", 1), mock_player),  # type: ignore
-        MockBet(-1, MockOutcome("4-1 Split", 4), mock_player),  # type: ignore
-        MockBet(100, MockOutcome("Column 1", 6), mock_player),  # type: ignore
+        MockBet(0, MockOutcome("Red", 1), MockPlayer()),  # type: ignore
+        MockBet(-1, MockOutcome("4-1 Split", 4), MockPlayer()),  # type: ignore
+        MockBet(100, MockOutcome("Column 1", 6), MockPlayer()),  # type: ignore
     ]
 
 
+@pytest.fixture
+def craps_bet() -> MockBet:
+    def _craps_bet(name):
+        return MockBet(10, MockOutcome(name, 1), MockPlayer())  # type: ignore
+
+    return _craps_bet  # type: ignore
+
+
 class MockTable:
-    def __init__(self):
+    def __init__(self, *bets):
         self.limit = 30
         self.wheel = MockWheel()
         self.bets = []
@@ -253,9 +266,30 @@ def mock_table():
     return MockTable
 
 
+class MockCrapsTable(MockTable):
+    def __init__(self, *bets):
+        super(MockCrapsTable, self).__init__(bets)
+        self.game = None
+
+    def set_game(self, game):
+        self.game = game
+
+
+@pytest.fixture
+def mock_craps_table():
+    return MockCrapsTable
+
+
 class MockPlayer:
     def __init__(self):
         self.outcome = MockOutcome("Black", 1)
+        self.stake = 100
+
+    def win(self, bet):
+        self.stake += bet.win_amount()
+
+    def lose(self, bet):
+        pass
 
     def __repr__(self):
         return f"{self.__class__.__name__}()"
@@ -285,8 +319,9 @@ def mock_game():
 
 
 class MockCrapsGame:
-    def __init__(self):
+    def __init__(self, table):
         self.current_point = None
+        self.table = table
 
     def craps(self):
         ...
