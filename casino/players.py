@@ -560,6 +560,7 @@ class CrapsPlayer(Player):
 
     pass_line: casino.main.Outcome
     working_bet: Optional[casino.main.Bet]
+    table: casino.main.CrapsTable
 
     def __init__(self, table: casino.main.CrapsTable) -> None:
         """Constructs the `CrapsPlayer` instance with a specific table for placing
