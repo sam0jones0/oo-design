@@ -116,7 +116,6 @@ class Passenger57(Player):
             1, self.black, self
         )  # Stake will be >= 1 if self.playing()
         self.table.place_bet(current_bet)
-        self.stake -= current_bet.amount
 
 
 class Martingale(Player):
@@ -137,7 +136,7 @@ class Martingale(Player):
 
     def __init__(self, table: casino.main.Table) -> None:
         super().__init__(table)
-        self.bet_multiple = 1  # TODO: Is this needed?
+        self.bet_multiple = 1
         self.loss_count = 0
 
     def reset(self, duration: int, stake: int) -> None:
@@ -171,7 +170,6 @@ class Martingale(Player):
             self.reset(self.rounds_to_go, self.stake)
             self.place_bets()
             return
-        self.stake -= current_bet.amount
 
     def win(self, bet: casino.main.Bet) -> None:
         """Uses the superclass `Player.win()` method to update the stake with an
@@ -256,7 +254,6 @@ class PlayerRandom(Player):
         random_outcome = self.rng.choice(list(self.table.wheel.all_outcomes.values()))
         current_bet = casino.main.Bet(1, random_outcome, self)
         self.table.place_bet(current_bet)
-        self.stake -= current_bet.amount
 
 
 class Player1326(Player):
@@ -291,7 +288,6 @@ class Player1326(Player):
         if current_bet.amount > self.stake:
             current_bet.amount = self.stake
         self.table.place_bet(current_bet)
-        self.stake -= current_bet.amount
 
     def win(self, bet: casino.main.Bet) -> None:
         """Uses the superclass method to update stake with the amount won. Uses
@@ -451,7 +447,6 @@ class PlayerCancellation(Player):
             except casino.main.InvalidBet:
                 self.rounds_to_go = 0
                 return
-            self.stake -= current_bet.amount
         else:
             self.reset_sequence()
 
@@ -518,7 +513,6 @@ class PlayerFibonacci(Player):
         except casino.main.InvalidBet:
             self.rounds_to_go = 0
             return
-        self.stake -= current_bet.amount
 
     def win(self, bet: casino.main.Bet) -> None:
         """Users the superclass method to update the stake with an amount won.
@@ -548,7 +542,7 @@ class CrapsPlayer(Player):
     based on the `Outcome` instance named 'Pass Line'. This is a very persistent
     player.
 
-    # TODO: This is stub class to enable CrapsGame to be written. Needs expanding.
+    # TODO: This is a stub class to enable CrapsGame to be written. Needs expanding.
 
     Attributes:
         pass_line: This is the `Outcome` on which this player focuses their betting.
@@ -574,6 +568,13 @@ class CrapsPlayer(Player):
         """Places a new 'Pass Line' `Bet` if there is no current working bet."""
         if self.working_bet is None:
             bet = casino.main.Bet(1, self.pass_line, self)
-            # FIXME: bet.price is not yet deducted from player.stake.
             self.table.place_bet(bet)
             self.working_bet = bet
+
+    def win(self, bet: casino.main.Bet) -> None:
+        self.working_bet = None
+        super(CrapsPlayer, self).win(bet)
+
+    def lose(self, bet: casino.main.Bet) -> None:
+        self.working_bet = None
+        super(CrapsPlayer, self).lose(bet)

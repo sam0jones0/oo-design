@@ -62,6 +62,15 @@ def seeded_wheel():
 
 
 @pytest.fixture
+def seeded_dice():
+    rng = random.Random()
+    rng.seed(99998)
+    dice = casino.main.Dice()
+    dice.rng = rng
+    return dice
+
+
+@pytest.fixture
 def wheel_with_outcomes(mock_outcomes):
     wheel = casino.main.Wheel()
     wheel.add_outcomes(8, mock_outcomes)
@@ -210,6 +219,9 @@ class MockBet:
     def win_amount(self):
         return self.amount * 2
 
+    def price(self):
+        return self.amount
+
     def set_outcome(self, outcome):
         self.outcome = outcome
 
@@ -259,6 +271,7 @@ class MockTable:
 
     def place_bet(self, bet):
         self.bets.append(bet)
+        bet.player.stake -= bet.price()
 
 
 @pytest.fixture
@@ -273,6 +286,9 @@ class MockCrapsTable(MockTable):
 
     def set_game(self, game):
         self.game = game
+
+    def remove_bet(self, bet):
+        self.bets.remove(bet)
 
 
 @pytest.fixture
@@ -319,21 +335,21 @@ def mock_game():
 
 
 class MockCrapsGame:
-    def __init__(self, table):
+    def __init__(self, dice, table):
         self.current_point = None
         self.table = table
 
-    def craps(self):
+    def craps(self, throw):
         ...
 
-    def natural(self) -> None:
+    def natural(self, throw) -> None:
         if self.current_point:
             self.current_point = None
 
-    def eleven(self):
+    def eleven(self, throw):
         ...
 
-    def point(self):
+    def point(self, throw):
         if self.current_point is None:
             self.current_point = "dice roll"  # Set point to value of dice roll.
         elif self.current_point == "dice roll":

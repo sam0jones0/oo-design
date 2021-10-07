@@ -21,7 +21,7 @@ def test_craps_game_state(
     monkeypatch.setattr(casino.main, "CrapsGame", mock_craps_game)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
 
-    game = casino.main.CrapsGame("table")
+    game = casino.main.CrapsGame("dice", "table")  # type: ignore
     assert isinstance(game, tests.conftest.MockCrapsGame)
     player = mock_player()
     craps_game_state = casino.main.CrapsGameState(game)  # type: ignore
@@ -52,6 +52,6 @@ def test_craps_game_state(
 
 def test_craps_game_state_abstract_methods_reverted(monkeypatch, mock_craps_game):
     monkeypatch.setattr(casino.main, "CrapsGame", mock_craps_game)
-    game = casino.main.CrapsGame("table")
+    game = casino.main.CrapsGame("dice", "table")  # type: ignore
     with pytest.raises(TypeError):
         craps_game_state = casino.main.CrapsGameState(game)

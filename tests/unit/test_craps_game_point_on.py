@@ -22,7 +22,7 @@ class TestCrapsGamePointOn:
         monkeypatch.setattr(casino.main, "PointThrow", mock_throw)
 
         self.table = casino.main.CrapsTable()
-        self.game = casino.main.CrapsGame(self.table)
+        self.game = casino.main.CrapsGame("dice", self.table)  # type: ignore
         self.table.set_game(self.game)
         self.state = casino.main.CrapsGamePointOn(point=6, game=self.game)
 
@@ -73,11 +73,11 @@ class TestCrapsGamePointOn:
         craps_throw = casino.main.CrapsThrow(1, 2)
         self.state = self.state.craps(craps_throw)
 
-        assert dont_come_bet.player.stake == 120
-        assert come_bet.player.stake == 100
-        assert come_odds_bet.player.stake == 100
-        assert pass_bet.player.stake == 100
-        assert dont_pass_bet.player.stake == 100
+        assert dont_come_bet.player.stake == 110
+        assert come_bet.player.stake == 90
+        assert come_odds_bet.player.stake == 90
+        assert pass_bet.player.stake == 90
+        assert dont_pass_bet.player.stake == 90
 
         assert len(self.table.bets) == 3
         assert isinstance(self.state, casino.main.CrapsGamePointOn)
@@ -104,14 +104,14 @@ class TestCrapsGamePointOn:
         natural_throw = casino.main.NaturalThrow(3, 4)
         self.state = self.state.natural(natural_throw)
 
-        assert dont_pass_bet.player.stake == 120
-        assert dont_pass_odds.player.stake == 120
-        assert dont_come_point_bet.player.stake == 120
-        assert dont_come_point_odds_bet.player.stake == 120
-        assert pass_bet.player.stake == 100
-        assert dont_come_line_bet.player.stake == 100
-        assert come_point_bet.player.stake == 100
-        assert come_point_odds_bet.player.stake == 100
+        assert dont_pass_bet.player.stake == 110
+        assert dont_pass_odds.player.stake == 110
+        assert dont_come_point_bet.player.stake == 110
+        assert dont_come_point_odds_bet.player.stake == 110
+        assert pass_bet.player.stake == 90
+        assert dont_come_line_bet.player.stake == 90
+        assert come_point_bet.player.stake == 90
+        assert come_point_odds_bet.player.stake == 90
 
         assert isinstance(self.state, casino.main.CrapsGamePointOff)
         assert len(self.table.bets) == 0
@@ -132,11 +132,11 @@ class TestCrapsGamePointOn:
         eleven_throw = casino.main.ElevenThrow(6, 5)
         self.state = self.state.eleven(eleven_throw)
 
-        assert dont_come_bet.player.stake == 100
-        assert come_bet.player.stake == 120
-        assert come_odds_bet.player.stake == 100
-        assert pass_bet.player.stake == 100
-        assert dont_pass_bet.player.stake == 100
+        assert dont_come_bet.player.stake == 90
+        assert come_bet.player.stake == 110
+        assert come_odds_bet.player.stake == 90
+        assert pass_bet.player.stake == 90
+        assert dont_pass_bet.player.stake == 90
 
         assert len(self.table.bets) == 3
         assert isinstance(self.state, casino.main.CrapsGamePointOn)
@@ -151,14 +151,15 @@ class TestCrapsGamePointOn:
         self.table.place_bet(pass_odds_bet)
         self.table.place_bet(dont_pass_bet)
         self.table.place_bet(dont_pass_odds_bet)
+        assert len(self.table.bets) == 4
 
         point_throw = casino.main.PointThrow(2, 4)  # Point is 6.
         self.state = self.state.point(point_throw)
 
-        assert pass_bet.player.stake == 120
-        assert pass_odds_bet.player.stake == 120
-        assert dont_pass_bet.player.stake == 100
-        assert dont_pass_odds_bet.player.stake == 100
+        assert pass_bet.player.stake == 110
+        assert pass_odds_bet.player.stake == 110
+        assert dont_pass_bet.player.stake == 90
+        assert dont_pass_odds_bet.player.stake == 90
 
         assert len(self.table.bets) == 0
         assert isinstance(self.state, casino.main.CrapsGamePointOff)
@@ -181,15 +182,15 @@ class TestCrapsGamePointOn:
         point_throw = casino.main.PointThrow(1, 4)  # Point is 6.
         self.state = self.state.point(point_throw)
 
-        assert pass_bet.player.stake == 100
-        assert come_point_bet.player.stake == 120
-        assert come_point_odds_bet.player.stake == 120
-        assert dont_come_point_bet.player.stake == 100
-        assert dont_come_point_odds_bet.player.stake == 100
-        assert other_come_point_bet.player.stake == 100
+        assert pass_bet.player.stake == 90
+        assert come_point_bet.player.stake == 110
+        assert come_point_odds_bet.player.stake == 110
+        assert dont_come_point_bet.player.stake == 90
+        assert dont_come_point_odds_bet.player.stake == 90
+        assert other_come_point_bet.player.stake == 90
 
         assert len(self.table.bets) == 2
-        assert isinstance(self.state, casino.main.CrapsGamePointOff)
+        assert isinstance(self.state, casino.main.CrapsGamePointOn)
 
     def test_point_throw_come_line_move_to_throw(self, craps_bet):
         """TODO"""
@@ -207,7 +208,7 @@ class TestCrapsGamePointOn:
         assert dont_come_line_bet.outcome.name == "Don't Come Point 8"
 
         assert len(self.table.bets) == 3
-        assert isinstance(self.state, casino.main.CrapsGamePointOff)
+        assert isinstance(self.state, casino.main.CrapsGamePointOn)
 
     def test_point_outcome_odds(self):
         """TODO"""
@@ -215,4 +216,4 @@ class TestCrapsGamePointOn:
 
     def test_str(self):
         """TODO"""
-        assert self.state.__str__() == "The point is 6"
+        assert self.state.__str__() == "The Point Is 6."

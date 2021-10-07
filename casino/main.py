@@ -322,7 +322,6 @@ class Throw(RandomEvent):
         self.d1 = d1
         self.d2 = d2
         self.key = (d1, d2)
-        # TODO: Are sets of all winners/losers really needed?
         self.winners = set(self.outcomes) if self.outcomes else set()
         self.losers = set()
         self.win_one_roll = set()
@@ -388,9 +387,10 @@ class Throw(RandomEvent):
                 (neither a winner or loser).
         """
         if bet.outcome in self.win_one_roll:
-            bet.player.stake += bet.win_amount()  # TODO: Should payout be done here?
+            bet.player.win(bet)
             return True
         elif bet.outcome in self.lose_one_roll:
+            bet.player.lose(bet)
             return True
 
         return False
@@ -407,9 +407,10 @@ class Throw(RandomEvent):
                 (neither a winner or loser).
         """
         if bet.outcome in self.win_hardway:
-            bet.player.stake += bet.win_amount()  # TODO: Should payout be done here?
+            bet.player.win(bet)
             return True
         elif bet.outcome in self.lose_hardway:
+            bet.player.lose(bet)
             return True
 
         return False
@@ -1112,8 +1113,7 @@ class Table:
         if 0 < bet.amount <= self.limit and self.bets_total + bet.amount <= self.limit:
             self.bets.append(bet)
             self.bets_total += bet.amount
-            # self.bet.player.stake -= bet.amount
-            # TODO: Investigate if this is better than player deducting stake itself.
+            bet.player.stake -= bet.price()
         else:
             raise casino.main.InvalidBet(
                 "Placing this bet violates table min/limit rules."
@@ -1228,14 +1228,11 @@ class CrapsTable(Table):
 
     def validate(self) -> bool:
         """Uses the superclass to see if the sum of all bets is less than or equal
-        to the table limit. Also validates each individual bet.
+        to the table limit.
 
         Returns:
             `True` if the table state is valid, `False` otherwise.
         """
-        for bet in self.bets:
-            if not self.is_valid_bet(bet):
-                return False
         return super(CrapsTable, self).validate()
 
 
@@ -1289,10 +1286,10 @@ class CrapsGame:
         player.place_bets()
         self.table.validate()
         win_throw = self.dice.roll()
-        win_throw.update_game(self)
         for bet in self.table.bets[:]:
             if any([win_throw.resolve_hard_ways(bet), win_throw.resolve_one_roll(bet)]):
                 self.table.remove_bet(bet)
+        win_throw.update_game(self)
 
     def is_allowed(self, outcome: Outcome) -> bool:
         """Determines if the `Outcome` is allowed in the current state of the game.
@@ -1588,6 +1585,13 @@ class CrapsGamePointOff(CrapsGameState):
             elif bet.outcome.name == "Don't Pass Line":
                 bet.player.lose(bet)
                 self.game.table.remove_bet(bet)
+            elif self.is_working(bet.outcome):
+                # [Don't] Come Point bets are still working and will lose.
+                bet.player.lose(bet)
+                self.game.table.remove_bet(bet)
+            else:  # Push any non-working bets such as [Don't] Come Point Odds.
+                bet.player.stake += bet.amount
+                self.game.table.remove_bet(bet)
 
         return self
 
@@ -1747,15 +1751,20 @@ class CrapsGamePointOn(CrapsGameState):
         Args:
             throw: The `Throw` that is associated a point number.
         """
-        for bet in self.game.table.bets[:]:
-            if throw.event_id == self.current_point:
+        if throw.event_id == self.current_point:
+            for bet in self.game.table.bets[:]:
                 if bet.outcome.name in {"Pass Line", "Pass Odds"}:
                     bet.player.win(bet)
                     self.game.table.remove_bet(bet)
                 elif bet.outcome.name in {"Don't Pass Line", "Don't Pass Odds"}:
                     bet.player.lose(bet)
                     self.game.table.remove_bet(bet)
-            else:
+                elif bet.outcome.name in {"Come Line", "Don't Come Line"}:
+                    self.move_to_throw(bet, throw)
+
+            return CrapsGamePointOff(self.game)
+        else:
+            for bet in self.game.table.bets[:]:
                 if bet.outcome.name in {
                     f"Come Point {throw.event_id}",
                     f"Come Point {throw.event_id} Odds",
@@ -1768,11 +1777,10 @@ class CrapsGamePointOn(CrapsGameState):
                 }:
                     bet.player.lose(bet)
                     self.game.table.remove_bet(bet)
+                elif bet.outcome.name in {"Come Line", "Don't Come Line"}:
+                    self.move_to_throw(bet, throw)
 
-            if bet.outcome.name in {"Come Line", "Don't Come Line"}:
-                self.move_to_throw(bet, throw)
-
-        return CrapsGamePointOff(self.game)
+        return self
 
     def point_outcome_odds(self) -> Optional[Fraction]:
         """Returns a `Fraction` object representing the odds for Pass/Don't Pass
@@ -1786,7 +1794,7 @@ class CrapsGamePointOn(CrapsGameState):
         return Fraction(*odds[self.current_point])
 
     def __str__(self) -> str:
-        return f"The point is {self.current_point}"
+        return f"The Point Is {self.current_point}."
 
 
 class RouletteGame:
