@@ -1111,6 +1111,10 @@ class Table:
             InvalidBet: Placing this ``bet`` breaks the `Table` limit rules.
         """
         if 0 < bet.amount <= self.limit and self.bets_total + bet.amount <= self.limit:
+            if bet.player.stake - bet.price() < 0:
+                raise InvalidBet(
+                    f"Player does not have enough money to place this bet: {repr(bet)}."
+                )
             self.bets.append(bet)
             self.bets_total += bet.amount
             bet.player.stake -= bet.price()
@@ -1500,7 +1504,9 @@ class CrapsGameState(ABC):
             )
             bet.set_outcome(new_outcome)
         else:
-            raise ValueError("throw is not a Point Throw.")
+            raise ValueError(
+                f"Not a Point Throw or bet cannot be moved: {repr(bet)}, {repr(throw)}."
+            )
 
     @abstractmethod
     def __str__(self) -> str:

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import random
 from abc import ABC, abstractmethod
-from typing import FrozenSet, Type, List, Optional
+from typing import FrozenSet, Type, List
 
 import casino.main
 import casino.odds
@@ -59,10 +59,7 @@ class Player(ABC):
 
     def playing(self) -> bool:
         """Returns `True` while the player is still active."""
-        if self.rounds_to_go > 0 and self.stake > 0:
-            return True
-        else:
-            return False
+        return self.rounds_to_go > 0 and self.stake > 0
 
     def win(self, bet: casino.main.Bet) -> None:
         """Notification from the `Game` object that the `Bet` instance was a
@@ -169,7 +166,6 @@ class Martingale(Player):
         except casino.main.InvalidBet:
             self.reset(self.rounds_to_go, self.stake)
             self.place_bets()
-            return
 
     def win(self, bet: casino.main.Bet) -> None:
         """Uses the superclass `Player.win()` method to update the stake with an
@@ -446,7 +442,6 @@ class PlayerCancellation(Player):
                 self.table.place_bet(current_bet)
             except casino.main.InvalidBet:
                 self.rounds_to_go = 0
-                return
         else:
             self.reset_sequence()
 
@@ -512,7 +507,6 @@ class PlayerFibonacci(Player):
             self.table.place_bet(current_bet)
         except casino.main.InvalidBet:
             self.rounds_to_go = 0
-            return
 
     def win(self, bet: casino.main.Bet) -> None:
         """Users the superclass method to update the stake with an amount won.
@@ -538,43 +532,59 @@ class PlayerFibonacci(Player):
 
 
 class CrapsPlayer(Player):
-    """A `Player` for the game of Craps. This player constructs a `Bet` instance
-    based on the `Outcome` instance named 'Pass Line'. This is a very persistent
-    player.
+    """A `Player` who places bets in Craps. This is an abstract class all other
+    `CrapsPlayer` subclasses will inherit from.
 
-    # TODO: This is a stub class to enable CrapsGame to be written. Needs expanding.
+    Implements basic `win` and `lose` methods used by all of its subclasses.
 
     Attributes:
-        pass_line: This is the `Outcome` on which this player focuses their betting.
-            It will be an instance of the 'Pass Line' `Outcome` with 1:1 odds.
-        working_bet: This is the current 'Pass Line' `Bet`. Each time a bet is resolved
-            this is reset to `None`, ensuring only one bet is working at a time.
-        table: The `Table` which collects all bets.
+        table: The `CrapsTable` used to place individual `Bet` instances.
+        stake: The player's current stake. Initialised to the player's starting
+            budget.
+        rounds_to_go: The number of rounds left to play. Initialised by the overall
+            simulation control to the maximum number of rounds to play. In Craps,
+            this is the number of throws of the dice, which may be a large number of
+            quick games or a small number of long-running games.
+
     """
 
-    pass_line: casino.main.Outcome
-    working_bet: Optional[casino.main.Bet]
     table: casino.main.CrapsTable
+    stake: int
+    rounds_to_go: int
 
     def __init__(self, table: casino.main.CrapsTable) -> None:
         """Constructs the `CrapsPlayer` instance with a specific table for placing
         bets.
         """
         super(CrapsPlayer, self).__init__(table)
-        self.pass_line = casino.main.Outcome("Pass Line", casino.odds.PASS_COME)
-        self.working_bet = None
 
+    @abstractmethod
     def place_bets(self) -> None:
-        """Places a new 'Pass Line' `Bet` if there is no current working bet."""
-        if self.working_bet is None:
-            bet = casino.main.Bet(1, self.pass_line, self)
-            self.table.place_bet(bet)
-            self.working_bet = bet
+        """Places various `Bet` instances on the `CrapsTable` instance."""
+        pass
+
+    def playing(self) -> bool:
+        """Returns `True` while the player is still active.
+
+        A `CrapsPlayer` will only become inactive after `rounds_to_go` is
+        zero and they have no more active bets.
+        """
+        return not (self.rounds_to_go < 1 and not self.table.bets)
 
     def win(self, bet: casino.main.Bet) -> None:
-        self.working_bet = None
+        """Notification from the `CrapsGame` object that the `Bet` instance was
+        a winner.
+
+        Args:
+            bet: The `Bet` that was a winner.
+        """
         super(CrapsPlayer, self).win(bet)
 
     def lose(self, bet: casino.main.Bet) -> None:
-        self.working_bet = None
+        """Notification from the `CrapsGame` object that the `Bet` instance was
+        a loser.
+
+        Args:
+            bet: The `Bet` that was a loser.
+        """
         super(CrapsPlayer, self).lose(bet)
