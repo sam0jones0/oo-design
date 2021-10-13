@@ -155,7 +155,7 @@ class Martingale(Player):
         If `bet_amount` exceeds `self.stake`, bet entire remaining stake. If
         `bet_amount` exceeds `table.limit`, restart the betting strategy.
         """
-        bet_amount = 1 * (2 ** self.loss_count)
+        bet_amount = 2 ** self.loss_count
         if bet_amount > self.stake:
             bet_amount = self.stake
         current_bet = casino.main.Bet(
@@ -180,7 +180,7 @@ class Martingale(Player):
         self.bet_multiple = 1
 
     def lose(self, bet: casino.main.Bet) -> None:
-        """Uses the superclass `Player.loss()` to do whatever bookkeeping the
+        """Uses the superclass `Player.lose()` to do whatever bookkeeping the
         superclass already does. Increments `loss_count` by 1 and doubles
         `bet_multiple`.
 
@@ -588,3 +588,94 @@ class CrapsPlayer(Player):
             bet: The `Bet` that was a loser.
         """
         super(CrapsPlayer, self).lose(bet)
+
+
+class CrapsPlayerPass(CrapsPlayer):
+    """A `CrapsPlayer` who places a Pass Line bet in Craps.
+
+    Attributes:
+        table: The `CrapsTable` used to place individual `Bet` instances.
+    """
+
+    def __init__(self, table: casino.main.CrapsTable) -> None:
+        super(CrapsPlayerPass, self).__init__(table)
+
+    def place_bets(self) -> None:
+        """Places a Pass Line bet on the `CrapsTable` if no Pass Line bet is present."""
+        if self.rounds_to_go > 0:
+            if not self.table.contains_outcome("Pass Line"):
+                self.table.place_bet(
+                    casino.main.Bet(
+                        1, casino.main.Outcome("Pass Line", casino.odds.PASS_COME), self
+                    )
+                )
+
+
+class CrapsMartingale(CrapsPlayer):
+    """ "A `CrapsPlayer` who places bets in Craps. This player doubles their Pass
+    Line Odds bet on every loss and resets their Pass Line Odds bet to a base
+    amount on each win.
+
+    Attributes:
+        table: The `CrapsTable` used to place individual `Bet` instances.
+        loss_count: The number of losses. This is the number of times to double
+            the Pass Line Odds bet.
+        bet_multiple: The bet multiplier based on the number of losses.
+    """
+
+    bet_multiple: int
+    loss_count: int
+
+    def __init__(self, table: casino.main.CrapsTable) -> None:
+        super(CrapsMartingale, self).__init__(table)
+        self.loss_count = 0
+        self.bet_multiple = 1
+
+    def place_bets(self) -> None:
+        """If no Pass Line bet is present, this will update the `CrapsTable` with
+        a bet on the Pass Line at the base bet amount.
+
+        If no Pass Line Odds bet is present, this will update the `CrapsTable` with
+        a Pass Line Odds bet. The amount is the base amount times `self.bet_multiple`.
+        """
+        if self.rounds_to_go > 0 and self.table.game is not None:
+            if not self.table.contains_outcome("Pass Line"):
+                self.table.place_bet(
+                    casino.main.Bet(
+                        1, casino.main.Outcome("Pass Line", casino.odds.PASS_COME), self
+                    )
+                )
+            elif not self.table.contains_outcome("Pass Odds"):
+                self.table.place_bet(
+                    casino.main.Bet(
+                        2 ** self.loss_count,
+                        casino.main.Outcome("Pass Odds", self.table.game.point_odds()),
+                        self,
+                    )
+                )
+
+    def win(self, bet: casino.main.Bet) -> None:
+        """Uses the superclass `Player.win()` method to update the stake with an
+        amount won. Then resets `loss_count` to zero and resets `bet_multiple`
+        to 1 for Pass Odds bets only.
+
+        Args:
+            bet: The winning bet.
+        """
+        super(CrapsMartingale, self).win(bet)
+        if bet.outcome.name == "Pass Odds":
+            self.loss_count = 0
+            self.bet_multiple = 1
+
+    def lose(self, bet: casino.main.Bet) -> None:
+        """Uses the superclass `Player.lose()` to do whatever bookkeeping the
+        superclass already does. Increments `loss_count` by 1 and doubles
+        `bet_multiple` for Pass Odds bets only.
+
+        Args:
+            bet: The losing bet.
+        """
+        super(CrapsMartingale, self).lose(bet)
+        if bet.outcome.name == "Pass Odds":
+            self.loss_count += 1
+            self.bet_multiple *= 2

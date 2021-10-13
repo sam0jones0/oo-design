@@ -1161,6 +1161,16 @@ class Table:
         self.bets = []
         self.bets_total = 0
 
+    def contains_outcome(self, outcome_name) -> bool:
+        """Returns `True` if the table contains a bet with an outcome name of
+        ``outcome_name``.
+        """
+        for bet in self.bets:
+            if bet.outcome.name == outcome_name:
+                return True
+
+        return False
+
     def __iter__(self) -> Iterator[Bet]:
         """Returns an iterator over the available `Bet` instances."""
         # We need to be able remove bets from the table. Consequently, we have
@@ -1287,13 +1297,17 @@ class CrapsGame:
         Args:
             player: The player who will place bets on this game.
         """
-        player.place_bets()
-        self.table.validate()
-        win_throw = self.dice.roll()
-        for bet in self.table.bets[:]:
-            if any([win_throw.resolve_hard_ways(bet), win_throw.resolve_one_roll(bet)]):
-                self.table.remove_bet(bet)
-        win_throw.update_game(self)
+        if player.playing():
+            player.place_bets()
+            self.table.validate()
+            win_throw = self.dice.roll()
+            for bet in self.table.bets[:]:
+                if any(
+                    [win_throw.resolve_hard_ways(bet), win_throw.resolve_one_roll(bet)]
+                ):
+                    self.table.remove_bet(bet)
+            win_throw.update_game(self)
+            player.rounds_to_go -= 1
 
     def is_allowed(self, outcome: Outcome) -> bool:
         """Determines if the `Outcome` is allowed in the current state of the game.
@@ -1382,11 +1396,15 @@ class CrapsGame:
         """
         self.state = self.state.point(throw)
 
-    def point_odds(self) -> Optional[Fraction]:
+    def point_odds(self) -> Fraction:
         """Returns the odds for [Don't] Pass Line Odds for the current point.
         This delegates the real work to the current `CrapsGameState` object.
         """
-        return self.state.point_outcome_odds()
+        odds = self.state.point_outcome_odds()
+        if odds is None:
+            raise ValueError("Attempted to get point odds when point is off.")
+
+        return odds
 
     def reset(self) -> None:
         """This will reset the game by setting the state to a new instance of

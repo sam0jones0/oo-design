@@ -273,6 +273,13 @@ class MockTable:
         self.bets.append(bet)
         bet.player.stake -= bet.price()
 
+    def contains_outcome(self, outcome_name):
+        for bet in self.bets:
+            if bet.outcome.name == outcome_name:
+                return True
+
+        return False
+
 
 @pytest.fixture
 def mock_table():
@@ -355,6 +362,9 @@ class MockCrapsGame:
         elif self.current_point == "dice roll":
             # Win this game and set point off.
             self.current_point = None
+
+    def point_odds(self):
+        return 1
 
     def __str__(self) -> str:
         return str(self.current_point) if self.current_point else "Point Off"
