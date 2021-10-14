@@ -1221,7 +1221,7 @@ class CrapsTable(Table):
             InvalidBet: Placing this ``bet`` breaks the `Table` limit rules.
         """
         if not self.is_valid_bet(bet):
-            raise InvalidBet(f"Bet is not allowed in this state: {bet}.")
+            raise InvalidBet(f"Bet is not allowed in this state ({self.game.state}): {bet}.")
         super(CrapsTable, self).place_bet(bet)
 
     def is_valid_bet(self, bet: Bet) -> bool:
@@ -1664,7 +1664,7 @@ class CrapsGamePointOff(CrapsGameState):
         return None
 
     def __str__(self) -> str:
-        return "The Point Is Off."
+        return "The Point Is Off"
 
 
 class CrapsGamePointOn(CrapsGameState):
@@ -1818,7 +1818,7 @@ class CrapsGamePointOn(CrapsGameState):
         return Fraction(*odds[self.current_point])
 
     def __str__(self) -> str:
-        return f"The Point Is {self.current_point}."
+        return f"The Point Is {self.current_point}"
 
 
 class RouletteGame:
@@ -1889,7 +1889,7 @@ class Simulator:
     maxima: "IntegerStatistics"
     end_stakes: "IntegerStatistics"
 
-    def __init__(self, game: RouletteGame, player: casino.players.Player) -> None:
+    def __init__(self, game: Union[RouletteGame, CrapsGame], player: casino.players.Player) -> None:
         self.init_duration = 250
         self.init_stake = 100
         self.samples = 50
@@ -1915,6 +1915,7 @@ class Simulator:
         while self.player.playing():
             self.game.cycle(self.player)
             stake_values.append(self.player.stake)
+        self.game.reset()
 
         return stake_values
 
@@ -2052,17 +2053,32 @@ def print_sim_results(sim: Simulator) -> None:
         f"{sim.maxima.stdev():>15.2f}"
         f"{sim.end_stakes.stdev():>15.2f}"
     )
+    print(f"\n{'':5s}{'Duration':>15s}{'Maxima':>15s}{'End Stake':>15s}\n{'-' * 50}")
 
 
 def main():
-    table = Table()
-    game = RouletteGame(table, table.wheel)
-    game.wheel.bin_builder.build_bins(table.wheel)
-    # # To run a simulation for just one player and print the results:
-    player = casino.players.PlayerFibonacci(table)
+    # # # # Craps # # # #
+    table = CrapsTable()
+    dice = Dice()
+    game = CrapsGame(dice, table)
+    table.set_game(game)
+    player = casino.players.CrapsMartingale(table)
     sim = Simulator(game, player)
     sim.gather()
     print_sim_results(sim)
+    # # # # # # # # # # #
+
+    # # # # Roulette # # # #
+    # table = Table()
+    # game = RouletteGame(table, table.wheel)
+    # game.wheel.bin_builder.build_bins(table.wheel)
+    # # # To run a simulation for just one player and print the results:
+    # player = casino.players.PlayerFibonacci(table)
+    # sim = Simulator(game, player)
+    # sim.gather()
+    # print_sim_results(sim)
+    # # # # # # # # # # # #
+
     # bulk_sim = BulkSimulator(game)
     # bulk_sim.gather_all()
     # bulk_sim.save_to_csv("sim_stats.csv")

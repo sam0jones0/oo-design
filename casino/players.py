@@ -87,6 +87,12 @@ class Player(ABC):
         """
         pass
 
+    def __str__(self):
+        return f"{self.__class__.__name__} has {self.rounds_to_go} rounds to go with a stake of {self.stake}."
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}(stake={self.stake}, rounds_to_go={self.rounds_to_go}"
+
 
 class Passenger57(Player):
     """Simple `Player` subclass who always constructs a `Bet` instance based on
@@ -588,6 +594,9 @@ class CrapsPlayer(Player):
             bet: The `Bet` that was a loser.
         """
         super(CrapsPlayer, self).lose(bet)
+        # Wait until final bet is lost before causing self.playing to return False.
+        if self.stake < 1:
+            self.rounds_to_go = 0
 
 
 class CrapsPlayerPass(CrapsPlayer):
@@ -638,7 +647,7 @@ class CrapsMartingale(CrapsPlayer):
         If no Pass Line Odds bet is present, this will update the `CrapsTable` with
         a Pass Line Odds bet. The amount is the base amount times `self.bet_multiple`.
         """
-        if self.rounds_to_go > 0 and self.table.game is not None:
+        if self.stake > 0 and self.table.game is not None:
             if not self.table.contains_outcome("Pass Line"):
                 self.table.place_bet(
                     casino.main.Bet(
@@ -646,9 +655,14 @@ class CrapsMartingale(CrapsPlayer):
                     )
                 )
             elif not self.table.contains_outcome("Pass Odds"):
+                bet_amount = 2 ** self.loss_count
+                if bet_amount > self.stake:
+                    bet_amount = self.stake
+                if bet_amount >= self.table.limit:
+                    bet_amount = self.table.limit - 1  # -1 to account for initial Pass Bet.
                 self.table.place_bet(
                     casino.main.Bet(
-                        2 ** self.loss_count,
+                        bet_amount,
                         casino.main.Outcome("Pass Odds", self.table.game.point_odds()),
                         self,
                     )
