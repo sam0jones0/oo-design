@@ -9,16 +9,16 @@ class TestCrapsGamePointOff:
     """TODO"""
 
     @pytest.fixture(autouse=True)
-    def _setup(self, monkeypatch, mock_craps_game, mock_craps_table, mock_throw):
+    def _setup(self, monkeypatch, mock_craps_game, mock_table, mock_throw):
         """TODO"""
         monkeypatch.setattr(casino.main, "CrapsGame", mock_craps_game)
-        monkeypatch.setattr(casino.main, "CrapsTable", mock_craps_table)
+        monkeypatch.setattr(casino.main, "Table", mock_table)
         monkeypatch.setattr(casino.main, "NaturalThrow", mock_throw)
         monkeypatch.setattr(casino.main, "ElevenThrow", mock_throw)
         monkeypatch.setattr(casino.main, "CrapsThrow", mock_throw)
         monkeypatch.setattr(casino.main, "PointThrow", mock_throw)
 
-        self.table = casino.main.CrapsTable()
+        self.table = casino.main.Table()
         self.game = casino.main.CrapsGame("dice", self.table)  # type: ignore
         self.table.set_game(self.game)
         self.state = casino.main.CrapsGamePointOff(self.game)
@@ -139,4 +139,4 @@ class TestCrapsGamePointOff:
 
     def test_str(self):
         """TODO"""
-        assert self.state.__str__() == "The Point Is Off."
+        assert self.state.__str__() == "The Point Is Off"

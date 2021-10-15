@@ -8,10 +8,11 @@ import casino.players
 import tests.conftest
 
 
-def test_passenger57(monkeypatch, mock_table, mock_bet):
+def test_passenger57(monkeypatch, mock_table, mock_bet, mock_game):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
+    table.set_game(mock_game())
     player = casino.players.Passenger57(table)
     assert isinstance(player.black, tests.conftest.MockOutcome)
     player.reset(250, 100)

@@ -29,10 +29,10 @@ class TestDice:
         for throw in self.mock_throws:
             dice.add_throw(throw)
 
-        assert dice.roll() == self.mock_throws[0]
-        assert dice.roll() == self.mock_throws[2]
-        assert dice.roll() == self.mock_throws[0]
-        assert dice.roll() == self.mock_throws[1]
+        assert dice.choose() == self.mock_throws[0]
+        assert dice.choose() == self.mock_throws[2]
+        assert dice.choose() == self.mock_throws[0]
+        assert dice.choose() == self.mock_throws[1]
 
         assert dice._get_throw(2, 6) == self.mock_throws[0]
         assert dice._get_throw(5, 5) == self.mock_throws[1]

@@ -111,7 +111,7 @@ class Passenger57(Player):
         use in creating bets.
         """
         super().__init__(table)
-        self.black = table.wheel.get_outcome("black")
+        self.black = table.game.wheel.get_outcome("black")
 
     def place_bets(self) -> None:
         """Create and place one `Bet` on the 'Black' `Outcome` instance."""
@@ -165,7 +165,7 @@ class Martingale(Player):
         if bet_amount > self.stake:
             bet_amount = self.stake
         current_bet = casino.main.Bet(
-            bet_amount, self.table.wheel.get_outcome("black"), self
+            bet_amount, self.table.game.wheel.get_outcome("black"), self
         )
         try:
             self.table.place_bet(current_bet)
@@ -230,7 +230,7 @@ class SevenReds(Martingale):
         Args:
             outcomes: The `Outcome` set from a `Bin`.
         """
-        if self.table.wheel.get_outcome("red") in outcomes:
+        if self.table.game.wheel.get_outcome("red") in outcomes:
             self.red_count -= 1
         else:
             self.red_count = 7
@@ -253,7 +253,7 @@ class PlayerRandom(Player):
 
     def place_bets(self) -> None:
         """Updates the `Table` object with a randomly placed `Bet` instance."""
-        random_outcome = self.rng.choice(list(self.table.wheel.all_outcomes.values()))
+        random_outcome = self.rng.choice(list(self.table.game.wheel.all_outcomes.values()))
         current_bet = casino.main.Bet(1, random_outcome, self)
         self.table.place_bet(current_bet)
 
@@ -279,7 +279,7 @@ class Player1326(Player):
     def __init__(self, table: casino.main.Table) -> None:
         """Invokes the superclass constructor and initialises the state and outcome."""
         super().__init__(table)
-        self.outcome = self.table.wheel.get_outcome("Black")
+        self.outcome = self.table.game.wheel.get_outcome("Black")
         self.state = Player1326NoWins(self)
 
     def place_bets(self) -> None:
@@ -420,7 +420,7 @@ class PlayerCancellation(Player):
         """
         super().__init__(table)
         self.sequence = []
-        self.outcome = self.table.wheel.get_outcome("Black")
+        self.outcome = self.table.game.wheel.get_outcome("Black")
 
     def reset(self, duration, stake):
         """Sets `stake`, `rounds_to_go` and `sequence` back to their initial values."""
@@ -505,7 +505,7 @@ class PlayerFibonacci(Player):
     def place_bets(self) -> None:
         """Create and place a `Bet` of a value according to `recent` + `previous`."""
         current_bet = casino.main.Bet(
-            self.recent, self.table.wheel.get_outcome("Black"), self
+            self.recent, self.table.game.wheel.get_outcome("Black"), self
         )
         if current_bet.amount > self.stake:
             current_bet.amount = self.stake
@@ -544,7 +544,7 @@ class CrapsPlayer(Player):
     Implements basic `win` and `lose` methods used by all of its subclasses.
 
     Attributes:
-        table: The `CrapsTable` used to place individual `Bet` instances.
+        table: The `Table` used to place individual `Bet` instances.
         stake: The player's current stake. Initialised to the player's starting
             budget.
         rounds_to_go: The number of rounds left to play. Initialised by the overall
@@ -554,11 +554,11 @@ class CrapsPlayer(Player):
 
     """
 
-    table: casino.main.CrapsTable
+    table: casino.main.Table
     stake: int
     rounds_to_go: int
 
-    def __init__(self, table: casino.main.CrapsTable) -> None:
+    def __init__(self, table: casino.main.Table) -> None:
         """Constructs the `CrapsPlayer` instance with a specific table for placing
         bets.
         """
@@ -566,7 +566,7 @@ class CrapsPlayer(Player):
 
     @abstractmethod
     def place_bets(self) -> None:
-        """Places various `Bet` instances on the `CrapsTable` instance."""
+        """Places various `Bet` instances on the `Table` instance."""
         pass
 
     def playing(self) -> bool:
@@ -603,14 +603,14 @@ class CrapsPlayerPass(CrapsPlayer):
     """A `CrapsPlayer` who places a Pass Line bet in Craps.
 
     Attributes:
-        table: The `CrapsTable` used to place individual `Bet` instances.
+        table: The `Table` used to place individual `Bet` instances.
     """
 
-    def __init__(self, table: casino.main.CrapsTable) -> None:
+    def __init__(self, table: casino.main.Table) -> None:
         super(CrapsPlayerPass, self).__init__(table)
 
     def place_bets(self) -> None:
-        """Places a Pass Line bet on the `CrapsTable` if no Pass Line bet is present."""
+        """Places a Pass Line bet on the `Table` if no Pass Line bet is present."""
         if self.rounds_to_go > 0:
             if not self.table.contains_outcome("Pass Line"):
                 self.table.place_bet(
@@ -626,7 +626,7 @@ class CrapsMartingale(CrapsPlayer):
     amount on each win.
 
     Attributes:
-        table: The `CrapsTable` used to place individual `Bet` instances.
+        table: The `Table` used to place individual `Bet` instances.
         loss_count: The number of losses. This is the number of times to double
             the Pass Line Odds bet.
         bet_multiple: The bet multiplier based on the number of losses.
@@ -635,16 +635,16 @@ class CrapsMartingale(CrapsPlayer):
     bet_multiple: int
     loss_count: int
 
-    def __init__(self, table: casino.main.CrapsTable) -> None:
+    def __init__(self, table: casino.main.Table) -> None:
         super(CrapsMartingale, self).__init__(table)
         self.loss_count = 0
         self.bet_multiple = 1
 
     def place_bets(self) -> None:
-        """If no Pass Line bet is present, this will update the `CrapsTable` with
+        """If no Pass Line bet is present, this will update the `Table` with
         a bet on the Pass Line at the base bet amount.
 
-        If no Pass Line Odds bet is present, this will update the `CrapsTable` with
+        If no Pass Line Odds bet is present, this will update the `Table` with
         a Pass Line Odds bet. The amount is the base amount times `self.bet_multiple`.
         """
         if self.stake > 0 and self.table.game is not None:

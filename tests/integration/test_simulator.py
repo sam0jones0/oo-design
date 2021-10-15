@@ -10,8 +10,8 @@ import casino.players
 def test_simulator(seeded_wheel):
     wheel = seeded_wheel
     table = casino.main.Table()
-    table.wheel = wheel
-    table.wheel.bin_builder.build_bins(table.wheel)
+    table.set_game(casino.main.RouletteGame(table, wheel))
+    table.game.wheel = wheel
     player = casino.players.Passenger57(table)
     game = casino.main.RouletteGame(table, wheel)
 

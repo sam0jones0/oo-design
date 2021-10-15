@@ -308,6 +308,7 @@ class Throw(RandomEvent):
     """
 
     key: Tuple[int, int]
+    winners: Set[Outcome]
     losers: Set[Outcome]
     win_one_roll: Set[Outcome]
     lose_one_roll: Set[Outcome]
@@ -581,7 +582,43 @@ class PointThrow(Throw):
         game.point(self)
 
 
-class Wheel:
+class RandomEventFactory(ABC):
+    """The superclass for game devices that store and select random events.
+
+    This includes the `Dice` class for Craps games and the `Wheel` class for
+    Roulette games.
+
+    A `RandomEventFactory` is a wrapper over a collection of `RandomEvent`s and the
+    random number generator that selects a single event. A method is provided to
+    initialise this collection and subclasses provide specific methods of adding and
+    retrieving `RandomEvent`s to/from it.
+    """
+
+    def __init__(self, rng: random.Random = None) -> None:
+        """Saves the given random number generator (if provided) and calls
+        `self.initialise` to create a pool of result instances.
+
+        Args:
+            rng: Usually provided when a seeded `random.Random` instance is
+                required for testing.
+        """
+        self.rng = rng if rng else random.Random()
+        self.initialise()
+
+    @abstractmethod
+    def initialise(self) -> None:
+        """Create a collection of `RandomEvent` objects with the pool of possible
+        results.
+        """
+        pass
+
+    @abstractmethod
+    def choose(self) -> RandomEvent:
+        """Return the next `RandomEvent`."""
+        pass
+
+
+class Wheel(RandomEventFactory):
     """Wheel contains the 38 individual bins on a Roulette wheel, a random
     number generator and a collection of all possible outcomes. It can select a
     `Bin` at random, simulating a spin of the Roulette wheel.
@@ -595,15 +632,18 @@ class Wheel:
     bins: Tuple[Bin, ...]
     all_outcomes: Dict[str, Outcome]
 
-    def __init__(self) -> None:
+    def __init__(self, rng: random.Random = None) -> None:
         """Creates a new wheel with 38 empty `Bin` instances and then creates an
         instance of `BinBuilder`. Also creates a new random number generator
         instance and a dict to store all possible outcomes.
         """
         self.bins = tuple(Bin() for _ in range(38))
         self.all_outcomes = dict()
-        self.rng = random.Random()
-        self.bin_builder = BinBuilder()
+        super(Wheel, self).__init__(rng)
+
+    def initialise(self) -> None:
+        """Builds the bins and populates with the pool of possible `Outcome`s."""
+        BinBuilder().build_bins(self)
 
     def add_outcomes(self, number: int, outcomes: Iterable[Outcome]) -> None:
         """Adds the given `Outcomes` to the `Bin` instance with the given number
@@ -664,7 +704,7 @@ class Wheel:
         return outcome
 
 
-class Dice:
+class Dice(RandomEventFactory):
     """A `Dice` instances contains the 36 individual throws of two dice, plus
     a random number generator. It can select a `Throw` object at random,
     simulating a throw of dice.
@@ -677,12 +717,14 @@ class Dice:
 
     throws: Dict[Tuple[int, int], Throw]
 
-    def __init__(self) -> None:
+    def __init__(self, rng: random.Random = None) -> None:
         """Build the dictionary of `Throw` instances."""
         self.throws = dict()
-        self.rng = random.Random()
-        self.throw_builder = ThrowBuilder()
-        self.throw_builder.build_throws(self)
+        super(Dice, self).__init__(rng)
+
+    def initialise(self) -> None:
+        """Builds `self.throws` and populates with the pool of possible `Outcome`s."""
+        ThrowBuilder.build_throws(self)
 
     def add_throw(self, throw: Throw) -> None:
         """Adds the given `Throw` to the mapping maintained by this `Dice`
@@ -693,7 +735,7 @@ class Dice:
         """
         self.throws[throw.key] = throw
 
-    def roll(self) -> Throw:
+    def choose(self) -> Throw:
         """Returns a randomly selected `Throw` instance."""
         result_key = self.rng.choice(list(self.throws))
         return self.throws[result_key]
@@ -1083,38 +1125,38 @@ class Table:
         bets: This is a list of the `Bet` instances currently active. These will
             result in either wins or losses to the `Player` object.
         bets_total: A running total of all `Bet`'s amounts in play.
+        game: The game used to determine if a given bet is allowed or working
+            in a particular game state.
+
     """
 
     bets: List[Bet]
     limit: int
     bets_total: int
+    game: Optional[Union[RouletteGame, CrapsGame]]
 
     def __init__(self, *bets: Bet) -> None:
         """Creates an empty list of bets."""
         self.bets = []
         self.bets_total = 0
         self.limit = 30
-        self.wheel = Wheel()
+        self.game = None
 
-        if bets is not None:
-            for bet in bets:
-                self.place_bet(bet)
+    def set_game(self, game: Union[RouletteGame, CrapsGame]) -> None:
+        """Saves the given game instance to be used to validate bets."""
+        self.game = game
 
     def place_bet(self, bet: Bet) -> None:
         """Adds this ``bet`` to the list of active `bets` after checking if placing
         this bet does not violate the `Table` bet limit rules.
 
         Args:
-            bet: A `Bet` instances to be added to the table.
+            bet: A `Bet` instance to be added to the table.
 
         Raises:
             InvalidBet: Placing this ``bet`` breaks the `Table` limit rules.
         """
-        if 0 < bet.amount <= self.limit and self.bets_total + bet.amount <= self.limit:
-            if bet.player.stake - bet.price() < 0:
-                raise InvalidBet(
-                    f"Player does not have enough money to place this bet: {repr(bet)}."
-                )
+        if self.is_valid_bet(bet):
             self.bets.append(bet)
             self.bets_total += bet.amount
             bet.player.stake -= bet.price()
@@ -1132,6 +1174,35 @@ class Table:
         """
         self.bets.remove(bet)
         self.bets_total -= bet.amount
+
+    def is_valid_bet(self, bet: Bet) -> True:
+        """Validates this bet against the `Table` and `self.game` state.
+
+        Args:
+            bet: The bet to validate.
+
+        Returns:
+            `True` if the bet is valid, `False` otherwise.
+
+        Raises:
+            InvalidBet: If `self.game` is not set, the `Player` doesn't have enough
+            stale to place the bet, or if placing this bet would violate the `Table`'s
+            min/limit rules.
+        """
+        if self.game is None:
+            raise AttributeError(
+                "You need to set the game for this table: Table.set_game(game)"
+            )
+        if bet.player.stake - bet.price() < 0:
+            raise InvalidBet(
+                f"Player does not have enough money to place this bet: {repr(bet)}."
+            )
+        if not (0 < self.bets_total + bet.amount <= self.limit):
+            raise casino.main.InvalidBet(
+                "Placing this bet violates table min/limit rules."
+            )
+
+        return self.game.is_allowed(bet.outcome)
 
     def validate(self) -> bool:
         """Confirms the table-limit rules have been adhered to such that the sum
@@ -1184,72 +1255,6 @@ class Table:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
-class CrapsTable(Table):
-    """A subclass of `Table` with an association with a `CrapsGame` object.
-
-    As a subclass of the `Table` class, it contains all the `Bet` instances
-    created by the `Player` instance. It also has a betting limit, and the sum
-    of all of a player's bets must be less than or equal to this limit. We
-    assume a single `Player` instance in this simulation.
-
-    Attributes:
-        game: The `CrapsGame` used to determine if a given bet is allowed or working
-            in a particular game state.
-    """
-
-    game: Optional[CrapsGame]
-
-    def __init__(self, *bets: Bet) -> None:
-        """Uses the superclass for initialisation and associates the ``game`` with
-        this table.
-        """
-        super(CrapsTable, self).__init__(*bets)
-        self.game = None
-
-    def set_game(self, game: CrapsGame) -> None:
-        """Saves the given CrapsGame instance to be used to validate bets."""
-        self.game = game
-
-    def place_bet(self, bet: Bet) -> None:
-        """Adds this ``bet`` to the list of active `bets` after checking if placing
-        this bet does not violate the `Table` bet limit rules.
-
-        Args:
-            bet: A `Bet` instances to be added to the table.
-
-        Raises:
-            InvalidBet: Placing this ``bet`` breaks the `Table` limit rules.
-        """
-        if not self.is_valid_bet(bet):
-            raise InvalidBet(f"Bet is not allowed in this state ({self.game.state}): {bet}.")
-        super(CrapsTable, self).place_bet(bet)
-
-    def is_valid_bet(self, bet: Bet) -> bool:
-        """Validates this bet by checking with the `self.game` instance to see if
-        this bet is valid.
-
-        Args:
-            bet: The bet to validate.
-
-        Returns:
-            `True` if the bet is valid, `False` otherwise.
-        """
-        if self.game is None:
-            raise AttributeError(
-                "You need to set the game for this table: CrapsTable.set_game(game)"
-            )
-        return self.game.is_allowed(bet.outcome)
-
-    def validate(self) -> bool:
-        """Uses the superclass to see if the sum of all bets is less than or equal
-        to the table limit.
-
-        Returns:
-            `True` if the table state is valid, `False` otherwise.
-        """
-        return super(CrapsTable, self).validate()
-
-
 class CrapsGame:
     """Manages the sequence of actions that define the game of Craps.
 
@@ -1265,8 +1270,8 @@ class CrapsGame:
         dice: Contains the dice that returns a randomly selected `Throw` with
             winning and losing `Outcome` instances. This is an instance of the
             `Dice` class.
-        table: The `CrapsTable` instance contains bets placed by the player.
-        player: The `CrapsPlayer` instance to place bets on the `CrapsTable`
+        table: The `Table` instance contains bets placed by the player.
+        player: The `CrapsPlayer` instance to place bets on the `Table`
             instance.
         state: An instance of either `CrapsGamePointOff` or `CrapsGamePointOn`
             that determines state change rules and state-specific bet resolution
@@ -1276,19 +1281,17 @@ class CrapsGame:
             we are gathering statistical samples.
     """
 
-    player: Optional[casino.players.CrapsPlayer]
     state: CrapsGameState
 
-    def __init__(self, dice: Dice, table: CrapsTable) -> None:
+    def __init__(self, dice: Dice, table: Table) -> None:
         """Constructs a new `CrapsGame` instance, using the given `Dice` and
-        `CrapsTable` instances.
+        `Table` instances.
 
         The player is not defines at this time, since we may want to run several
         simulations with different players.
         """
         self.dice = dice
         self.table = table
-        self.player = None
         self.state = CrapsGamePointOff(self)
 
     def cycle(self, player: casino.players.CrapsPlayer) -> None:
@@ -1300,7 +1303,7 @@ class CrapsGame:
         if player.playing():
             player.place_bets()
             self.table.validate()
-            win_throw = self.dice.roll()
+            win_throw = self.dice.choose()
             for bet in self.table.bets[:]:
                 if any(
                     [win_throw.resolve_hard_ways(bet), win_throw.resolve_one_roll(bet)]
@@ -1420,14 +1423,14 @@ class CrapsGame:
 class CrapsGameState(ABC):
     """Defines the state-specific behaviour of a Craps game.
 
-    Individual subclasses provide methods used by the `CrapsTable` class to validate
+    Individual subclasses provide methods used by the `Table` class to validate
     bets and determine active bets. Subclasses provide state-specific methods used
     by a `Throw` object to possibly change the state and resolve bets.
 
     Attributes:
         game: The overall `CrapsGame` object for which this is a specific state.
             From this object, the various next state-change methods can get the
-            `CrapsTable` instance and an `Iterator` over the active `Bet`
+            `Table` instance and an `Iterator` over the active `Bet`
             instances.
     """
 
@@ -1540,7 +1543,7 @@ class CrapsGamePointOff(CrapsGameState):
     Attributes:
         game: The overall `CrapsGame` object for which this is a specific state.
             From this object, the various next state-change methods can get the
-            `CrapsTable` instance and an `Iterator` over the active `Bet`
+            `Table` instance and an `Iterator` over the active `Bet`
             instances.
     """
 
@@ -1675,7 +1678,7 @@ class CrapsGamePointOn(CrapsGameState):
     Attributes:
         game: The overall `CrapsGame` object for which this is a specific state.
             From this object, the various next state-change methods can get the
-            `CrapsTable` instance and an `Iterator` over the active `Bet`
+            `Table` instance and an `Iterator` over the active `Bet`
             instances.
         point: The point set by the current `Throw` instance.
     """
@@ -1857,6 +1860,20 @@ class RouletteGame:
             self.table.clear()
             player.rounds_to_go -= 1
 
+    def is_allowed(self, outcome: Outcome) -> bool:
+        """Determines if the `Outcome` is allowed in the current state of the game.
+
+        Roulette has no state so bets on all `Outcome`s are allowed.
+        """
+        return True
+
+    def reset(self):
+        """Reset the game back to its starting state.
+
+        This does not apply here as Roulette is stateless.
+        """
+        pass
+
 
 class Simulator:
     """`Simulator` exercises the Roulette simulation with a given `Player` placing
@@ -1889,7 +1906,9 @@ class Simulator:
     maxima: "IntegerStatistics"
     end_stakes: "IntegerStatistics"
 
-    def __init__(self, game: Union[RouletteGame, CrapsGame], player: casino.players.Player) -> None:
+    def __init__(
+        self, game: Union[RouletteGame, CrapsGame], player: casino.players.Player
+    ) -> None:
         self.init_duration = 250
         self.init_stake = 100
         self.samples = 50
@@ -2058,7 +2077,7 @@ def print_sim_results(sim: Simulator) -> None:
 
 def main():
     # # # # Craps # # # #
-    table = CrapsTable()
+    table = Table()
     dice = Dice()
     game = CrapsGame(dice, table)
     table.set_game(game)
@@ -2071,7 +2090,7 @@ def main():
     # # # # Roulette # # # #
     # table = Table()
     # game = RouletteGame(table, table.wheel)
-    # game.wheel.bin_builder.build_bins(table.wheel)
+    # table.set_game(game)
     # # # To run a simulation for just one player and print the results:
     # player = casino.players.PlayerFibonacci(table)
     # sim = Simulator(game, player)

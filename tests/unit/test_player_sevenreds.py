@@ -6,10 +6,11 @@ import casino.main
 import casino.players
 
 
-def test_sevenreds(monkeypatch, mock_table, mock_bet, mock_outcome):
+def test_sevenreds(monkeypatch, mock_table, mock_bet, mock_outcome, mock_game):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
+    table.set_game(mock_game())
     player = casino.players.SevenReds(table)
     player.reset(250, 100)
 

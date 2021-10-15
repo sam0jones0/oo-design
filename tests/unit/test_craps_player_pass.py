@@ -12,11 +12,11 @@ import casino.main
 import casino.players
 
 
-def test_craps_player_pass(monkeypatch, mock_craps_table, mock_outcome, mock_bet):
-    monkeypatch.setattr(casino.main, "CrapsTable", mock_craps_table)
+def test_craps_player_pass(monkeypatch, mock_table, mock_outcome, mock_bet):
+    monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Outcome", mock_outcome)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
-    table = casino.main.CrapsTable()
+    table = casino.main.Table()
     player = casino.players.CrapsPlayerPass(table)
     player.reset(duration=100, stake=1000)
 

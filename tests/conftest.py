@@ -56,8 +56,7 @@ def seeded_wheel():
     rng = random.Random()
     # First randint(0, 37) with seed of 1 will return 8.
     rng.seed(1)
-    wheel = casino.main.Wheel()
-    wheel.rng = rng
+    wheel = casino.main.Wheel(rng)
     return wheel
 
 
@@ -65,8 +64,7 @@ def seeded_wheel():
 def seeded_dice():
     rng = random.Random()
     rng.seed(99998)
-    dice = casino.main.Dice()
-    dice.rng = rng
+    dice = casino.main.Dice(rng)
     return dice
 
 
@@ -266,12 +264,18 @@ def craps_bet() -> MockBet:
 class MockTable:
     def __init__(self, *bets):
         self.limit = 30
-        self.wheel = MockWheel()
         self.bets = []
+        self.game = None
+
+    def set_game(self, game):
+        self.game = game
 
     def place_bet(self, bet):
         self.bets.append(bet)
         bet.player.stake -= bet.price()
+
+    def remove_bet(self, bet):
+        self.bets.remove(bet)
 
     def contains_outcome(self, outcome_name):
         for bet in self.bets:
@@ -284,23 +288,6 @@ class MockTable:
 @pytest.fixture
 def mock_table():
     return MockTable
-
-
-class MockCrapsTable(MockTable):
-    def __init__(self, *bets):
-        super(MockCrapsTable, self).__init__(bets)
-        self.game = None
-
-    def set_game(self, game):
-        self.game = game
-
-    def remove_bet(self, bet):
-        self.bets.remove(bet)
-
-
-@pytest.fixture
-def mock_craps_table():
-    return MockCrapsTable
 
 
 class MockPlayer:
@@ -334,6 +321,10 @@ def override_player_abstract_methods():
 class MockGame:
     def __init__(self):
         self.table = MockTable()
+        self.wheel = MockWheel()
+
+    def is_allowed(self):
+        return True
 
 
 @pytest.fixture

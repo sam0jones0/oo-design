@@ -7,10 +7,11 @@ import casino.main
 import casino.players
 
 
-def test_player_1326(monkeypatch, mock_bet, mock_table):
+def test_player_1326(monkeypatch, mock_bet, mock_table, mock_game):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
+    table.set_game(mock_game())
     player = casino.players.Player1326(table)
     assert not player.playing()
     player.reset(250, 100)
