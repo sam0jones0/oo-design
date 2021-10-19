@@ -1175,7 +1175,7 @@ class Table:
         self.bets.remove(bet)
         self.bets_total -= bet.amount
 
-    def is_valid_bet(self, bet: Bet) -> True:
+    def is_valid_bet(self, bet: Bet) -> bool:
         """Validates this bet against the `Table` and `self.game` state.
 
         Args:
@@ -2073,6 +2073,7 @@ def print_sim_results(sim: Simulator) -> None:
         f"{sim.end_stakes.stdev():>15.2f}"
     )
     print(f"\n{'':5s}{'Duration':>15s}{'Maxima':>15s}{'End Stake':>15s}\n{'-' * 50}")
+    print(f"Player: {sim.player.__class__.__name__}")
 
 
 def main():

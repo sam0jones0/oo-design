@@ -20,14 +20,13 @@ def test_game(seeded_wheel):
     table = casino.main.Table()
     table.set_game(casino.main.RouletteGame(table, wheel))
     table.game.wheel = wheel
-    player = casino.players.Passenger57(table)  # Always bets 1 on black.
+    player = casino.players.RouletteMartingale(table)
     player.reset(20, 100)
     game = casino.main.RouletteGame(table, wheel)
 
     while player.playing():
         game.cycle(player)
 
-    # Total of 11/20 winning bins: 8, 4, 31, 28, 24, 13, 6, 31, 24, 28, 17
     assert player.rounds_to_go == 0
-    assert player.stake == 102
+    assert player.stake == 108
     assert game.table.bets == []  # Check table has been cleared.

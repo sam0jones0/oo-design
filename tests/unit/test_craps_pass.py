@@ -17,7 +17,7 @@ def test_craps_player_pass(monkeypatch, mock_table, mock_outcome, mock_bet):
     monkeypatch.setattr(casino.main, "Outcome", mock_outcome)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
-    player = casino.players.CrapsPlayerPass(table)
+    player = casino.players.CrapsPass(table)
     player.reset(duration=100, stake=1000)
 
     assert not table.bets

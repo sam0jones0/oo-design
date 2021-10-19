@@ -12,7 +12,7 @@ import casino.main
 import casino.players
 
 
-def test_craps_player_pass(
+def test_craps_martingale(
     monkeypatch, mock_table, mock_outcome, mock_bet, mock_craps_game
 ):
     monkeypatch.setattr(casino.main, "Table", mock_table)

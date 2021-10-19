@@ -11,7 +11,7 @@ import casino.odds
 
 
 class Player(ABC):
-    """`Player` places bets in Roulette.
+    """`Player` places bets in a game.
 
     This is an abstract class, with no body for the `Player.place_bets()` method.
     However, this class does implement the basic `Player.win()` method used by
@@ -24,8 +24,9 @@ class Player(ABC):
         rounds_to_go: Number of rounds left to play. Set by the overall
             simulation control to the maximum number of rounds to play.
         table: The `Table` object used to place individual `Bet` instances. The
-            `Table` object contains the `Wheel` object from which the player can
-            get `Outcome` objects used to build `Bet` instances.
+            `Table` object contains the `Game` object which contains a
+            `RandomEventFactory` object from which the player can get `Outcome`
+            objects used to build `Bet` instances.
     """
 
     stake: int
@@ -58,8 +59,11 @@ class Player(ABC):
         self.stake = stake
 
     def playing(self) -> bool:
-        """Returns `True` while the player is still active."""
-        return self.rounds_to_go > 0 and self.stake > 0
+        """Returns `True` while the player is still active.
+
+        A player is still active when they have a stake greater than 0
+        """
+        return self.rounds_to_go > 0 and self.stake > 0 or self.table.bets
 
     def win(self, bet: casino.main.Bet) -> None:
         """Notification from the `Game` object that the `Bet` instance was a
@@ -88,42 +92,51 @@ class Player(ABC):
         pass
 
     def __str__(self):
-        return f"{self.__class__.__name__} has {self.rounds_to_go} rounds to go with a stake of {self.stake}."
+        return (
+            f"{self.__class__.__name__} has {self.rounds_to_go} rounds to"
+            f" go with a stake of {self.stake}."
+        )
 
     def __repr__(self):
-        return f"{self.__class__.__name__}(stake={self.stake}, rounds_to_go={self.rounds_to_go}"
+        return (
+            f"{self.__class__.__name__}(stake={self.stake},"
+            f" rounds_to_go={self.rounds_to_go}"
+        )
 
 
-class Passenger57(Player):
-    """Simple `Player` subclass who always constructs a `Bet` instance based on
-    the `Outcome` object named 'Black'.
+class RoulettePlayer(Player):
+    """A `Player` who places bets in Roulette. This is an abstract class all other
+    roulette player subclasses will inherit from.
 
     Attributes:
+        stake: The player's current stake represented as multiples of the table's
+            minimum bet. Set to the player's starting budget by the overall
+            simulation control.
+        rounds_to_go: Number of rounds left to play. Set by the overall
+            simulation control to the maximum number of rounds to play.
         table: The `Table` that is used to place individual `Bet` instances.
-        black: The `Outcome` on which this player focuses their betting.
     """
-
-    black: casino.main.Outcome
 
     def __init__(self, table: casino.main.Table) -> None:
         """Constructs the `Player` instance with a specific `Table` and `Wheel
         for creating and resolving bets. Also creates the 'black' `Outcome` for
         use in creating bets.
         """
-        super().__init__(table)
-        self.black = table.game.wheel.get_outcome("black")
+        super(RoulettePlayer, self).__init__(table)
 
+    @abstractmethod
     def place_bets(self) -> None:
-        """Create and place one `Bet` on the 'Black' `Outcome` instance."""
-        current_bet = casino.main.Bet(
-            1, self.black, self
-        )  # Stake will be >= 1 if self.playing()
-        self.table.place_bet(current_bet)
+        """Places various `Bet` instances on the `Table` instance.
+
+        Must be overridden in subclass as each `Player` will have different
+        betting strategy.
+        """
+        pass
 
 
-class Martingale(Player):
-    """`Martingale` is a `Player` subclass who places bets in Roulette. This player doubles
-    their bet on every loss and resets their bet to a base amount on each win.
+class RouletteMartingale(RoulettePlayer):
+    """`Martingale` is a `Player` subclass who places bets in Roulette. This player
+    doubles their bet on every loss and resets their bet to a base amount on each win.
 
     Attributes:
         table: The `Table` that is used to place individual `Bet` instances.
@@ -150,7 +163,7 @@ class Martingale(Player):
             duration: The number of `rounds_to_go` for the next session.
             stake: The initial stake to begin the next session with.
         """
-        super(Martingale, self).reset(duration, stake)
+        super(RouletteMartingale, self).reset(duration, stake)
         self.bet_multiple = 1
         self.loss_count = 0
 
@@ -181,7 +194,7 @@ class Martingale(Player):
         Args:
             bet: The winning bet.
         """
-        super(Martingale, self).win(bet)
+        super(RouletteMartingale, self).win(bet)
         self.loss_count = 0
         self.bet_multiple = 1
 
@@ -193,12 +206,12 @@ class Martingale(Player):
         Args:
             bet: The losing bet.
         """
-        super(Martingale, self).lose(bet)
+        super(RouletteMartingale, self).lose(bet)
         self.loss_count += 1
         self.bet_multiple *= 2
 
 
-class SevenReds(Martingale):
+class RouletteSevenReds(RouletteMartingale):
     """This is a `Player` subclass who places bets in roulette. They wait until
     the wheel has spun red seven times in a row before betting on black.
 
@@ -220,7 +233,7 @@ class SevenReds(Martingale):
         seen seven reds in a row.
         """
         if self.red_count == 0:
-            super(SevenReds, self).place_bets()
+            super(RouletteSevenReds, self).place_bets()
 
     def winners(self, outcomes: FrozenSet[casino.main.Outcome]) -> None:
         """This is notification from the `Game` class of all the winning outcomes.
@@ -236,7 +249,7 @@ class SevenReds(Martingale):
             self.red_count = 7
 
 
-class PlayerRandom(Player):
+class RouletteRandom(Player):
     """A `Player` subclass who places bets in roulette. This player makes random bets
     around the layout.
 
@@ -253,12 +266,14 @@ class PlayerRandom(Player):
 
     def place_bets(self) -> None:
         """Updates the `Table` object with a randomly placed `Bet` instance."""
-        random_outcome = self.rng.choice(list(self.table.game.wheel.all_outcomes.values()))
+        random_outcome = self.rng.choice(
+            list(self.table.game.wheel.all_outcomes.values())
+        )
         current_bet = casino.main.Bet(1, random_outcome, self)
         self.table.place_bet(current_bet)
 
 
-class Player1326(Player):
+class Roulette1326(RoulettePlayer):
     """ "A `Player` subclass who follows the 1-3-2-6 betting system. The player has a preferred
     `Outcome` instance. This should be an even money bet. The player also has a
     current betting state that determines the current bet to place, and what next
@@ -269,18 +284,18 @@ class Player1326(Player):
         outcome: This is the player's preferred `Outcome` instance, fetched from the
             `Table.Wheel` object.
         state: The current state of the 1-3-2-6 betting system. It will be an instance
-            of the `Player1326State` class. This will be one of the four states:
+            of the `Roulette1326State` class. This will be one of the four states:
             no wins, one win, two wins or three wins.
     """
 
-    state: "Player1326State"
+    state: "Roulette1326State"
     outcome: casino.main.Outcome
 
     def __init__(self, table: casino.main.Table) -> None:
         """Invokes the superclass constructor and initialises the state and outcome."""
         super().__init__(table)
         self.outcome = self.table.game.wheel.get_outcome("Black")
-        self.state = Player1326NoWins(self)
+        self.state = Roulette1326NoWins(self)
 
     def place_bets(self) -> None:
         """Updates the `Table` with a bet created by the current state. Delegates
@@ -298,7 +313,7 @@ class Player1326(Player):
         Args:
             bet: The `Bet` which won.
         """
-        super(Player1326, self).win(bet)
+        super(Roulette1326, self).win(bet)
         self.state = self.state.next_won()
 
     def lose(self, bet: casino.main.Bet) -> None:
@@ -310,11 +325,11 @@ class Player1326(Player):
         self.state = self.state.next_lost()
 
 
-class Player1326State:
+class Roulette1326State:
     """Superclass for all of the states in the 1-3-2-6 betting system.
 
     Attributes:
-        player: The `Player1326` player currently in this state. This object will
+        player: The `Roulette1326` player currently in this state. This object will
             be used to provide the `Outcome` object used in creating the `Bet`
             instance.
         next_state_win: The next state to transition to if the bet was a winner.
@@ -323,8 +338,8 @@ class Player1326State:
 
     def __init__(
         self,
-        player: Player1326,
-        next_state_win: Type["Player1326State"],
+        player: Roulette1326,
+        next_state_win: Type["Roulette1326State"],
         bet_amount: int,
     ) -> None:
         """Initialise class with arguments provided by the subclass state constructors."""
@@ -342,62 +357,62 @@ class Player1326State:
         """
         return casino.main.Bet(self.bet_amount, self.player.outcome, self.player)
 
-    def next_won(self) -> "Player1326State":
-        """Constructs the new `Player1326State` instance to be used when the bet
+    def next_won(self) -> "Roulette1326State":
+        """Constructs the new `Roulette1326State` instance to be used when the bet
         was a winner
 
         Returns:
-            The `Player1326State` to transition to on a winning bet.
+            The `Roulette1326State` to transition to on a winning bet.
         """
         return self.next_state_win(self.player)  # type: ignore
 
-    def next_lost(self) -> "Player1326State":
-        """Constructs the new `Player1326State` instance to be used when the bet
+    def next_lost(self) -> "Roulette1326State":
+        """Constructs the new `Roulette1326State` instance to be used when the bet
         was a loser. This method is the same for each subclass.
 
         Returns:
-            The `Player1326State` to transition to on a losing bet.
+            The `Roulette1326State` to transition to on a losing bet.
         """
-        return Player1326NoWins(self.player)
+        return Roulette1326NoWins(self.player)
 
 
-class Player1326NoWins(Player1326State):
+class Roulette1326NoWins(Roulette1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
     for when there are no wins.
     """
 
-    def __init__(self, player: Player1326):
-        super(Player1326NoWins, self).__init__(player, Player1326OneWin, 1)
+    def __init__(self, player: Roulette1326):
+        super(Roulette1326NoWins, self).__init__(player, Roulette1326OneWin, 1)
 
 
-class Player1326OneWin(Player1326State):
+class Roulette1326OneWin(Roulette1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
     for when there is one win.
     """
 
-    def __init__(self, player: Player1326):
-        super(Player1326OneWin, self).__init__(player, Player1326TwoWins, 3)
+    def __init__(self, player: Roulette1326):
+        super(Roulette1326OneWin, self).__init__(player, Roulette1326TwoWins, 3)
 
 
-class Player1326TwoWins(Player1326State):
+class Roulette1326TwoWins(Roulette1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
     for when there are two wins.
     """
 
-    def __init__(self, player: Player1326):
-        super(Player1326TwoWins, self).__init__(player, Player1326ThreeWins, 2)
+    def __init__(self, player: Roulette1326):
+        super(Roulette1326TwoWins, self).__init__(player, Roulette1326ThreeWins, 2)
 
 
-class Player1326ThreeWins(Player1326State):
+class Roulette1326ThreeWins(Roulette1326State):
     """Defines bet and state transition rules in the 1-3-2-6 betting system
     for when there are three wins.
     """
 
-    def __init__(self, player: Player1326):
-        super(Player1326ThreeWins, self).__init__(player, Player1326NoWins, 6)
+    def __init__(self, player: Roulette1326):
+        super(Roulette1326ThreeWins, self).__init__(player, Roulette1326NoWins, 6)
 
 
-class PlayerCancellation(Player):
+class RouletteCancellation(RoulettePlayer):
     """A `Player` subclass who uses the cancellation betting system. This player allocates
     their available budget into a sequence of bets that have an accelerating potential
     gain as well as recouping any losses.
@@ -414,7 +429,7 @@ class PlayerCancellation(Player):
     outcome: casino.main.Outcome
 
     def __init__(self, table: casino.main.Table) -> None:
-        """Uses the `PlayerCancellation.reset_sequence` method to initialise the
+        """Uses the `RouletteCancellation.reset_sequence` method to initialise the
         sequences of numbers used to establish the bet amount. This also picks a
         suitable even money `Outcome`.
         """
@@ -424,7 +439,7 @@ class PlayerCancellation(Player):
 
     def reset(self, duration, stake):
         """Sets `stake`, `rounds_to_go` and `sequence` back to their initial values."""
-        super(PlayerCancellation, self).reset(duration, stake)
+        super(RouletteCancellation, self).reset(duration, stake)
         self.reset_sequence()
 
     def reset_sequence(self):
@@ -458,7 +473,7 @@ class PlayerCancellation(Player):
         Args:
             bet: The `Bet` which won.
         """
-        super(PlayerCancellation, self).win(bet)
+        super(RouletteCancellation, self).win(bet)
         self.sequence = self.sequence[1:-1]
 
     def lose(self, bet: casino.main.Bet) -> None:
@@ -469,11 +484,11 @@ class PlayerCancellation(Player):
         Args:
             bet: The `Bet` which lost.
         """
-        super(PlayerCancellation, self).lose(bet)
+        super(RouletteCancellation, self).lose(bet)
         self.sequence.append(self.sequence[0] + self.sequence[-1])
 
 
-class PlayerFibonacci(Player):
+class RouletteFibonacci(RoulettePlayer):
     """A `Player` subclass who uses the Fibonacci betting system. This player allocates
     their available budget into a sequence of bets that have an accelerating
     potential gain.
@@ -495,7 +510,7 @@ class PlayerFibonacci(Player):
         self.previous = 0
 
     def reset(self, duration: int, stake: int) -> None:
-        super(PlayerFibonacci, self).reset(duration, stake)
+        super(RouletteFibonacci, self).reset(duration, stake)
         self.reset_bet_state()
 
     def reset_bet_state(self):
@@ -521,7 +536,7 @@ class PlayerFibonacci(Player):
         Args:
             bet: The `Bet` which won.
         """
-        super(PlayerFibonacci, self).win(bet)
+        super(RouletteFibonacci, self).win(bet)
         self.reset_bet_state()
 
     def lose(self, bet: casino.main.Bet) -> None:
@@ -531,7 +546,7 @@ class PlayerFibonacci(Player):
         Args:
             bet: The `Bet` which lost.
         """
-        super(PlayerFibonacci, self).lose(bet)
+        super(RouletteFibonacci, self).lose(bet)
         next_ = self.recent + self.previous
         self.previous = self.recent
         self.recent = next_
@@ -539,9 +554,7 @@ class PlayerFibonacci(Player):
 
 class CrapsPlayer(Player):
     """A `Player` who places bets in Craps. This is an abstract class all other
-    `CrapsPlayer` subclasses will inherit from.
-
-    Implements basic `win` and `lose` methods used by all of its subclasses.
+    craps player subclasses will inherit from.
 
     Attributes:
         table: The `Table` used to place individual `Bet` instances.
@@ -566,40 +579,15 @@ class CrapsPlayer(Player):
 
     @abstractmethod
     def place_bets(self) -> None:
-        """Places various `Bet` instances on the `Table` instance."""
+        """Places various `Bet` instances on the `Table` instance.
+
+        Must be overridden in subclass as each `Player` will have different
+        betting strategy.
+        """
         pass
 
-    def playing(self) -> bool:
-        """Returns `True` while the player is still active.
 
-        A `CrapsPlayer` will only become inactive after `rounds_to_go` is
-        zero and they have no more active bets.
-        """
-        return not (self.rounds_to_go < 1 and not self.table.bets)
-
-    def win(self, bet: casino.main.Bet) -> None:
-        """Notification from the `CrapsGame` object that the `Bet` instance was
-        a winner.
-
-        Args:
-            bet: The `Bet` that was a winner.
-        """
-        super(CrapsPlayer, self).win(bet)
-
-    def lose(self, bet: casino.main.Bet) -> None:
-        """Notification from the `CrapsGame` object that the `Bet` instance was
-        a loser.
-
-        Args:
-            bet: The `Bet` that was a loser.
-        """
-        super(CrapsPlayer, self).lose(bet)
-        # Wait until final bet is lost before causing self.playing to return False.
-        if self.stake < 1:
-            self.rounds_to_go = 0
-
-
-class CrapsPlayerPass(CrapsPlayer):
+class CrapsPass(CrapsPlayer):
     """A `CrapsPlayer` who places a Pass Line bet in Craps.
 
     Attributes:
@@ -607,7 +595,7 @@ class CrapsPlayerPass(CrapsPlayer):
     """
 
     def __init__(self, table: casino.main.Table) -> None:
-        super(CrapsPlayerPass, self).__init__(table)
+        super(CrapsPass, self).__init__(table)
 
     def place_bets(self) -> None:
         """Places a Pass Line bet on the `Table` if no Pass Line bet is present."""
@@ -659,7 +647,9 @@ class CrapsMartingale(CrapsPlayer):
                 if bet_amount > self.stake:
                     bet_amount = self.stake
                 if bet_amount >= self.table.limit:
-                    bet_amount = self.table.limit - 1  # -1 to account for initial Pass Bet.
+                    bet_amount = (
+                        self.table.limit - 1
+                    )  # -1 to account for initial Pass Bet.
                 self.table.place_bet(
                     casino.main.Bet(
                         bet_amount,

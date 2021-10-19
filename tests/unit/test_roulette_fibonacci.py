@@ -7,12 +7,12 @@ import casino.main
 import casino.players
 
 
-def test_player_fibonacci(monkeypatch, mock_table, mock_bet, mock_game):
+def test_roulette_fibonacci(monkeypatch, mock_table, mock_bet, mock_game):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
     table.set_game(mock_game())
-    player = casino.players.PlayerFibonacci(table)
+    player = casino.players.RouletteFibonacci(table)
     player.reset(250, 100)
 
     assert player.stake == 100
@@ -49,5 +49,6 @@ def test_player_fibonacci(monkeypatch, mock_table, mock_bet, mock_game):
     player.place_bets()
     assert table.bets[-1].amount == 99
 
+    table.bets = []
     assert player.stake == 0
     assert not player.playing()

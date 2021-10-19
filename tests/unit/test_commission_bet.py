@@ -8,7 +8,7 @@ import pytest
 import casino.main
 
 
-def test_bet(mock_player):
+def test_commission_bet(mock_player):
     """TODO"""
     player = mock_player()
     o1 = casino.main.Outcome("foo", Fraction(2, 1))

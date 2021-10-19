@@ -17,7 +17,7 @@ def test_craps_game(seeded_dice):
     table = casino.main.Table()
     game = casino.main.CrapsGame(dice, table)
     table.set_game(game)
-    player = casino.players.CrapsPlayerPass(table)
+    player = casino.players.CrapsPass(table)
     player.reset(duration=50, stake=100)
     assert player.stake == 100
 

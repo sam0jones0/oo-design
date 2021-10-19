@@ -7,12 +7,12 @@ import casino.main
 import casino.players
 
 
-def test_martingale(monkeypatch, mock_table, mock_bet, mock_game):
+def test_roulette_martingale(monkeypatch, mock_table, mock_bet, mock_game):
     monkeypatch.setattr(casino.main, "Table", mock_table)
     monkeypatch.setattr(casino.main, "Bet", mock_bet)
     table = casino.main.Table()
     table.set_game(mock_game())
-    player = casino.players.Martingale(table)
+    player = casino.players.RouletteMartingale(table)
     player.reset(250, 100)
 
     assert player.stake == 100
@@ -43,7 +43,6 @@ def test_martingale(monkeypatch, mock_table, mock_bet, mock_game):
     for _ in range(10):
         player.lose(mock_bet(4, "an_outcome", player))
     player.place_bets()  # This bet_amount will exceed table.limit.
-    assert not player.playing()
 
     assert str(table.bets[0]) == "1 on red 1:1"
     assert str(table.bets[1]) == "2 on red 1:1"
@@ -51,3 +50,6 @@ def test_martingale(monkeypatch, mock_table, mock_bet, mock_game):
     assert str(table.bets[3]) == "101 on red 1:1"  # Bet's entire remaining stake.
     with pytest.raises(IndexError):
         assert str(table.bets[4]) == "256 on red 1:1"
+
+    table.bets = []
+    assert not player.playing()
