@@ -34,6 +34,6 @@ class TestDice:
         assert dice.choose() == self.mock_throws[0]
         assert dice.choose() == self.mock_throws[1]
 
-        assert dice._get_throw(2, 6) == self.mock_throws[0]
-        assert dice._get_throw(5, 5) == self.mock_throws[1]
-        assert dice._get_throw(1, 3) == self.mock_throws[2]
+        assert dice.get_event((2, 6)) == self.mock_throws[0]
+        assert dice.get_event((5, 5)) == self.mock_throws[1]
+        assert dice.get_event((1, 3)) == self.mock_throws[2]

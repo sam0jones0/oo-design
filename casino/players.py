@@ -63,7 +63,7 @@ class Player(ABC):
 
         A player is still active when they have a stake greater than 0
         """
-        return self.rounds_to_go > 0 and self.stake > 0 or self.table.bets
+        return self.rounds_to_go > 0 and self.stake > 0 or bool(self.table.bets)
 
     def win(self, bet: casino.main.Bet) -> None:
         """Notification from the `Game` object that the `Bet` instance was a
@@ -174,11 +174,13 @@ class RouletteMartingale(RoulettePlayer):
         If `bet_amount` exceeds `self.stake`, bet entire remaining stake. If
         `bet_amount` exceeds `table.limit`, restart the betting strategy.
         """
+        assert self.table.game is not None, "table.game not set"
+
         bet_amount = 2 ** self.loss_count
         if bet_amount > self.stake:
             bet_amount = self.stake
         current_bet = casino.main.Bet(
-            bet_amount, self.table.game.wheel.get_outcome("black"), self
+            bet_amount, self.table.game.event_factory.get_outcome("black"), self
         )
         try:
             self.table.place_bet(current_bet)
@@ -243,7 +245,8 @@ class RouletteSevenReds(RouletteMartingale):
         Args:
             outcomes: The `Outcome` set from a `Bin`.
         """
-        if self.table.game.wheel.get_outcome("red") in outcomes:
+        assert self.table.game is not None, "table.game not set"
+        if self.table.game.event_factory.get_outcome("red") in outcomes:
             self.red_count -= 1
         else:
             self.red_count = 7
@@ -266,8 +269,9 @@ class RouletteRandom(Player):
 
     def place_bets(self) -> None:
         """Updates the `Table` object with a randomly placed `Bet` instance."""
+        assert self.table.game is not None, "table.game not set"
         random_outcome = self.rng.choice(
-            list(self.table.game.wheel.all_outcomes.values())
+            list(self.table.game.event_factory.all_outcomes.values())
         )
         current_bet = casino.main.Bet(1, random_outcome, self)
         self.table.place_bet(current_bet)
@@ -294,7 +298,8 @@ class Roulette1326(RoulettePlayer):
     def __init__(self, table: casino.main.Table) -> None:
         """Invokes the superclass constructor and initialises the state and outcome."""
         super().__init__(table)
-        self.outcome = self.table.game.wheel.get_outcome("Black")
+        assert self.table.game is not None, "table.game not set"
+        self.outcome = self.table.game.event_factory.get_outcome("Black")
         self.state = Roulette1326NoWins(self)
 
     def place_bets(self) -> None:
@@ -434,8 +439,9 @@ class RouletteCancellation(RoulettePlayer):
         suitable even money `Outcome`.
         """
         super().__init__(table)
+        assert self.table.game is not None, "table.game not set"
         self.sequence = []
-        self.outcome = self.table.game.wheel.get_outcome("Black")
+        self.outcome = self.table.game.event_factory.get_outcome("Black")
 
     def reset(self, duration, stake):
         """Sets `stake`, `rounds_to_go` and `sequence` back to their initial values."""
@@ -519,8 +525,9 @@ class RouletteFibonacci(RoulettePlayer):
 
     def place_bets(self) -> None:
         """Create and place a `Bet` of a value according to `recent` + `previous`."""
+        assert self.table.game is not None, "table.game not set"
         current_bet = casino.main.Bet(
-            self.recent, self.table.game.wheel.get_outcome("Black"), self
+            self.recent, self.table.game.event_factory.get_outcome("Black"), self
         )
         if current_bet.amount > self.stake:
             current_bet.amount = self.stake
@@ -609,7 +616,7 @@ class CrapsPass(CrapsPlayer):
 
 
 class CrapsMartingale(CrapsPlayer):
-    """ "A `CrapsPlayer` who places bets in Craps. This player doubles their Pass
+    """A `CrapsPlayer` who places bets in Craps. This player doubles their Pass
     Line Odds bet on every loss and resets their Pass Line Odds bet to a base
     amount on each win.
 
@@ -653,7 +660,7 @@ class CrapsMartingale(CrapsPlayer):
                 self.table.place_bet(
                     casino.main.Bet(
                         bet_amount,
-                        casino.main.Outcome("Pass Odds", self.table.game.point_odds()),
+                        casino.main.Outcome("Pass Odds", self.table.game.point_odds()),  # type: ignore
                         self,
                     )
                 )

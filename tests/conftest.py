@@ -284,6 +284,9 @@ class MockTable:
 
         return False
 
+    def __iter__(self):
+        return iter(self.bets[:])
+
 
 @pytest.fixture
 def mock_table():
@@ -321,7 +324,7 @@ def override_player_abstract_methods():
 class MockGame:
     def __init__(self):
         self.table = MockTable()
-        self.wheel = MockWheel()
+        self.event_factory = MockWheel()
 
     def is_allowed(self):
         return True

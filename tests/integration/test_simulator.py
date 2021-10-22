@@ -10,10 +10,10 @@ import casino.players
 def test_simulator(seeded_wheel):
     wheel = seeded_wheel
     table = casino.main.Table()
-    table.set_game(casino.main.RouletteGame(table, wheel))
+    table.set_game(casino.main.RouletteGame(wheel, table))
     table.game.wheel = wheel
     player = casino.players.RouletteFibonacci(table)
-    game = casino.main.RouletteGame(table, wheel)
+    game = casino.main.RouletteGame(wheel, table)
 
     sim = casino.main.Simulator(game, player)
     sim.init_duration = 20

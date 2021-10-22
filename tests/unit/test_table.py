@@ -8,7 +8,6 @@ import casino.main
 
 
 class TestTable:
-
     @pytest.fixture(autouse=True)
     def _setup(self, mock_game):
         self.game = mock_game

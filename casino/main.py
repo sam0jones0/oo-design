@@ -592,7 +592,14 @@ class RandomEventFactory(ABC):
     random number generator that selects a single event. A method is provided to
     initialise this collection and subclasses provide specific methods of adding and
     retrieving `RandomEvent`s to/from it.
+
+    Attributes:
+        all_outcomes: A dict containing all possible outcomes. Populated
+        rng: A `random.Random()` instance used to select `RandomEvent`s from the
+            internal collection.
     """
+
+    all_outcomes: Dict[str, Outcome]
 
     def __init__(self, rng: random.Random = None) -> None:
         """Saves the given random number generator (if provided) and calls
@@ -602,6 +609,7 @@ class RandomEventFactory(ABC):
             rng: Usually provided when a seeded `random.Random` instance is
                 required for testing.
         """
+        self.all_outcomes = dict()
         self.rng = rng if rng else random.Random()
         self.initialise()
 
@@ -616,6 +624,41 @@ class RandomEventFactory(ABC):
     def choose(self) -> RandomEvent:
         """Return the next `RandomEvent`."""
         pass
+
+    @abstractmethod
+    def get_event(self, key: Union[int, tuple[int, int]]) -> Optional[RandomEvent]:
+        """Returns the `RandomEvent` found in the internal collection with the
+        matching ``key``.
+
+        This is not needed by the main application. Unit tests will need this method
+        to return a specific `Throw` rather than a randomly selected one.
+
+        Args:
+            key: The key of the `RandomEvent`. E.g. `15` for a Roulette `Bin`, or
+                `(2, 4)` for a Craps `Throw`.
+
+        Returns:
+            The specified `RandomEvent` instance. Or `None` if no such instance exists.
+        """
+        pass
+
+    def get_outcome(self, name: str) -> Outcome:
+        """Returns an `Outcome` instance given the string ``name`` of the `Outcome`
+        from an internal collection of all_outcomes.
+
+        Args:
+            name: The name of an `Outcome`
+
+        Returns:
+            The requested `Outcome` instance.
+
+        Raises:
+            KeyError: There is no `Outcome` with name: ``name``.
+        """
+        outcome = self.all_outcomes.get(name.lower())
+        if outcome is None:
+            raise KeyError(f"No Outcome with name: {name}")
+        return outcome
 
 
 class Wheel(RandomEventFactory):
@@ -638,7 +681,6 @@ class Wheel(RandomEventFactory):
         instance and a dict to store all possible outcomes.
         """
         self.bins = tuple(Bin() for _ in range(38))
-        self.all_outcomes = dict()
         super(Wheel, self).__init__(rng)
 
     def initialise(self) -> None:
@@ -674,34 +716,18 @@ class Wheel(RandomEventFactory):
         """
         return self.rng.choice(self.bins)
 
-    def get_bin(self, bin_num: int) -> Bin:
+    def get_event(self, key: Union[int, tuple[int, int]]) -> Bin:
         """Returns the given `Bin` instance from the internal collection.
 
         Args:
-            bin_num: bin number, in the range 0-37 inclusive.
+            key: bin number, in the range 0-37 inclusive.
 
         Returns:
             The requested `Bin` instance.
         """
-        return self.bins[bin_num]
-
-    def get_outcome(self, name: str) -> Outcome:
-        """Returns an `Outcome` instance given the string ``name`` of the `Outcome`
-        from an internal collection of all_outcomes.
-
-        Args:
-            name: The name of an `Outcome`
-
-        Returns:
-            The requested `Outcome` instance.
-
-        Raises:
-            KeyError: There is no `Outcome` with name: ``name``.
-        """
-        outcome = self.all_outcomes.get(name.lower())
-        if outcome is None:
-            raise KeyError(f"No Outcome with name: {name}")
-        return outcome
+        if not isinstance(key, int) or not 0 <= key <= 37:
+            raise ValueError("Bin `key` must be int between 0-37 inclusive.")
+        return self.bins[key]
 
 
 class Dice(RandomEventFactory):
@@ -713,9 +739,11 @@ class Dice(RandomEventFactory):
         throws: A `dict` that maps a two-tuple (`Throw.key`) to a `Throw` instance.
         rng: A random number generator used to select a `Throw` instance from
             the `throws` collection.
+        all_outcomes: A dict containing all possible outcomes.
     """
 
     throws: Dict[Tuple[int, int], Throw]
+    all_outcomes: Dict[str, Outcome]
 
     def __init__(self, rng: random.Random = None) -> None:
         """Build the dictionary of `Throw` instances."""
@@ -734,27 +762,32 @@ class Dice(RandomEventFactory):
             throw: The `Throw` to add.
         """
         self.throws[throw.key] = throw
+        self.all_outcomes.update(
+            {outcome.name.lower(): outcome for outcome in throw.outcomes}
+        )
 
     def choose(self) -> Throw:
         """Returns a randomly selected `Throw` instance."""
         result_key = self.rng.choice(list(self.throws))
         return self.throws[result_key]
 
-    def _get_throw(self, d1: int, d2: int) -> Optional[Throw]:
+    def get_event(self, key: Union[int, tuple[int, int]]) -> Optional[RandomEvent]:
         """Takes a particular combination of dice and returns the appropriate
         `Throw` object.
-
         This is not needed by the main application. Unit tests will need this method
         to return a specific `Throw` rather than a randomly selected one.
-
         Args:
             d1: The value of one die.
             d2: The value of the other die.
-
         Returns:
             The specified `Throw` instance. Or `None` if no such instance exists.
         """
-        return self.throws.get((d1, d2))
+        if not isinstance(key, tuple) or not 0 < min(key) <= max(key) < 7:
+            raise ValueError(
+                "Throw `key` must be tuple[int, int] where int is"
+                " between 1-6 inclusive."
+            )
+        return self.throws.get(key)
 
 
 class BinBuilder:
@@ -980,7 +1013,7 @@ class ThrowBuilder:
                     winners_one |= {any_craps_o, horn_o, field_o, prop_o[d_sum]}
                     losers_one |= {o for o in prop_o.values()} - {prop_o[d_sum]}
                     craps_throw.add_one_roll(winners_one, losers_one)
-                    dice.throws[(d1, d2)] = craps_throw
+                    dice.add_throw(craps_throw)
 
                 elif d_sum in {4, 5, 6, 8, 9, 10}:  # Point.
                     point_throw = PointThrow(d1, d2)
@@ -995,7 +1028,7 @@ class ThrowBuilder:
                     losers_one |= {o for o in prop_o.values()} | {horn_o, any_craps_o}
                     point_throw.add_one_roll(winners_one, losers_one)
                     point_throw.add_hardways(winners_hard, losers_hard)
-                    dice.throws[(d1, d2)] = point_throw
+                    dice.add_throw(point_throw)
 
                 elif d_sum == 7:  # Natural.
                     nat_throw = NaturalThrow(d1, d2)
@@ -1005,7 +1038,7 @@ class ThrowBuilder:
                     losers_hard |= {o for o in hard_o.values()}
                     nat_throw.add_one_roll(winners_one, losers_one)
                     nat_throw.add_hardways(winners_hard, losers_hard)
-                    dice.throws[(d1, d2)] = nat_throw
+                    dice.add_throw(nat_throw)
 
                 elif d_sum == 11:  # Eleven.
                     eleven_throw = ElevenThrow(d1, d2)
@@ -1013,7 +1046,7 @@ class ThrowBuilder:
                     losers_one |= {o for o in prop_o.values()} - {prop_o[d_sum]}
                     losers_one.add(any_craps_o)
                     eleven_throw.add_one_roll(winners_one, losers_one)
-                    dice.throws[(d1, d2)] = eleven_throw
+                    dice.add_throw(eleven_throw)
 
 
 @dataclass(frozen=False)
@@ -1133,7 +1166,7 @@ class Table:
     bets: List[Bet]
     limit: int
     bets_total: int
-    game: Optional[Union[RouletteGame, CrapsGame]]
+    game: Optional[Game]
 
     def __init__(self, *bets: Bet) -> None:
         """Creates an empty list of bets."""
@@ -1142,7 +1175,7 @@ class Table:
         self.limit = 30
         self.game = None
 
-    def set_game(self, game: Union[RouletteGame, CrapsGame]) -> None:
+    def set_game(self, game: Game) -> None:
         """Saves the given game instance to be used to validate bets."""
         self.game = game
 
@@ -1255,7 +1288,62 @@ class Table:
         return f"{self.__class__.__name__}({', '.join(repr(bet) for bet in self.bets)})"
 
 
-class CrapsGame:
+class Game(ABC):
+    """Manages the sequence of actions that define casino games, such as Roulette
+    and Craps.
+
+    Individual subclasses implement the detailed playing cycles of the games. This
+    superclass has methods for notifying the `Player` instance to place bets,
+    getting a new `RandomEvent` instance and resolving the `Bet` objects present
+    on the `Table` instance.
+
+    Attributes:
+        event_factory: Contains a subclass of `RandomEventFactory`, such as `Wheel`
+            or `Dice` that return a randomly selected `RandomEvent` with specific
+            `Outcome`s that win or lose.
+        table: Contains a `Table` instance which holds all the `Bet` instances
+            placed by the `Player` object.
+    """
+
+    def __init__(self, event_factory: RandomEventFactory, table: Table) -> None:
+        """Constructs a new `Game`, using a given `RandomEventFactory` and `Table."""
+        self.event_factory = event_factory
+        self.table = table
+
+    @abstractmethod
+    def cycle(self, player: casino.players.Player) -> None:
+        """Execute a single cycle of play with a given `Player`.
+
+        For Roulette this is a single spin of the `Wheel`. For Craps, this is a
+        single throw of the `Dice`, which is only one part of a complete game.
+        This method will call `player.place_bets()` to placed bets. It will call
+        `event_factory.choose()` to get the next `RandomEvent` containing a set
+        of `Outcome` instances. It will then call `table.__iter__` to get an
+        iterator over the current `Bet` objects. The bets are resolved, calling
+        the `player.win()` or `player.lose()` methods respectively.
+        """
+        pass
+
+    @abstractmethod
+    def is_allowed(self, outcome: Outcome) -> bool:
+        """Determines if the `Outcome` is allowed in the current state of the game.
+
+        Args:
+            outcome: An `Outcome` that may be allowed or not allowed, depending on
+                the game state.
+
+        Returns:
+              `True` if this ``outcome`` is allowed, `False` otherwise.
+        """
+        pass
+
+    def reset(self) -> None:
+        """Tells the table to clear all bets. Can be overridden by subclasses to
+        also reset the game state."""
+        self.table.clear()
+
+
+class CrapsGame(Game):
     """Manages the sequence of actions that define the game of Craps.
 
     This includes notifying the `Player` to place bets, throwing the `Dice` instance
@@ -1290,11 +1378,10 @@ class CrapsGame:
         The player is not defines at this time, since we may want to run several
         simulations with different players.
         """
-        self.dice = dice
-        self.table = table
+        super(CrapsGame, self).__init__(dice, table)
         self.state = CrapsGamePointOff(self)
 
-    def cycle(self, player: casino.players.CrapsPlayer) -> None:
+    def cycle(self, player: casino.players.Player) -> None:
         """This will execute a single cycle of play with a given `CrapsPlayer`.
 
         Args:
@@ -1303,13 +1390,13 @@ class CrapsGame:
         if player.playing():
             player.place_bets()
             self.table.validate()
-            win_throw = self.dice.choose()
-            for bet in self.table.bets[:]:
+            win_throw = self.event_factory.choose()
+            for bet in self.table:
                 if any(
-                    [win_throw.resolve_hard_ways(bet), win_throw.resolve_one_roll(bet)]
+                    [win_throw.resolve_hard_ways(bet), win_throw.resolve_one_roll(bet)]  # type: ignore
                 ):
                     self.table.remove_bet(bet)
-            win_throw.update_game(self)
+            win_throw.update_game(self)  # type: ignore
             player.rounds_to_go -= 1
 
     def is_allowed(self, outcome: Outcome) -> bool:
@@ -1414,7 +1501,7 @@ class CrapsGame:
         `CrapsGamePointOff`. It will also tell the table to clear all bets.
         """
         self.state = CrapsGamePointOff(self)
-        self.table.clear()
+        super(CrapsGame, self).reset()
 
     def __str__(self) -> str:
         return str(self.state)
@@ -1583,7 +1670,7 @@ class CrapsGamePointOff(CrapsGameState):
         Args:
             throw: The `Throw` that is associated with craps.
         """
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name == "Pass Line":
                 bet.player.lose(bet)
                 self.game.table.remove_bet(bet)
@@ -1605,7 +1692,7 @@ class CrapsGamePointOff(CrapsGameState):
         Args:
             throw: The `Throw` that is associated with a natural seven.
         """
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name == "Pass Line":
                 bet.player.win(bet)
                 self.game.table.remove_bet(bet)
@@ -1629,7 +1716,7 @@ class CrapsGamePointOff(CrapsGameState):
         Args:
             throw: The `Throw` that is associated with an eleven.
         """
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name == "Pass Line":
                 bet.player.win(bet)
                 self.game.table.remove_bet(bet)
@@ -1646,7 +1733,7 @@ class CrapsGamePointOff(CrapsGameState):
         Args:
             throw: The `Throw` that is associated a point number.
         """
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name in {
                 f"Come Point {throw.event_id}",
                 f"Don't Come Point {throw.event_id}",
@@ -1720,7 +1807,7 @@ class CrapsGamePointOn(CrapsGameState):
         Args:
             throw: The `Throw` that is associated with craps.
         """
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name == "Don't Come Line":
                 bet.player.win(bet)
                 self.game.table.remove_bet(bet)
@@ -1744,7 +1831,7 @@ class CrapsGamePointOn(CrapsGameState):
         losers |= {f"Come Point {i}" for i in (4, 5, 6, 8, 9, 10)}
         losers |= {f"Come Point {i} Odds" for i in (4, 5, 6, 8, 9, 10)}
 
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name in winners:
                 bet.player.win(bet)
                 self.game.table.remove_bet(bet)
@@ -1761,7 +1848,7 @@ class CrapsGamePointOn(CrapsGameState):
         Args:
             throw: The `Throw` that is associated with an eleven.
         """
-        for bet in self.game.table.bets[:]:
+        for bet in self.game.table:
             if bet.outcome.name == "Come Line":
                 bet.player.win(bet)
                 self.game.table.remove_bet(bet)
@@ -1779,7 +1866,7 @@ class CrapsGamePointOn(CrapsGameState):
             throw: The `Throw` that is associated a point number.
         """
         if throw.event_id == self.current_point:
-            for bet in self.game.table.bets[:]:
+            for bet in self.game.table:
                 if bet.outcome.name in {"Pass Line", "Pass Odds"}:
                     bet.player.win(bet)
                     self.game.table.remove_bet(bet)
@@ -1791,7 +1878,7 @@ class CrapsGamePointOn(CrapsGameState):
 
             return CrapsGamePointOff(self.game)
         else:
-            for bet in self.game.table.bets[:]:
+            for bet in self.game.table:
                 if bet.outcome.name in {
                     f"Come Point {throw.event_id}",
                     f"Come Point {throw.event_id} Odds",
@@ -1824,7 +1911,7 @@ class CrapsGamePointOn(CrapsGameState):
         return f"The Point Is {self.current_point}"
 
 
-class RouletteGame:
+class RouletteGame(Game):
     """`RouletteGame` manages the sequence of actions that defines the game of Roulette.
 
     This includes notifying the `Player` object to place bets, spinning the
@@ -1836,9 +1923,8 @@ class RouletteGame:
         table: The `Table` instance which holds bets to be resolved.
     """
 
-    def __init__(self, table: Table, wheel: Wheel) -> None:
-        self.wheel = wheel
-        self.table = table
+    def __init__(self, wheel: Wheel, table: Table) -> None:
+        super(RouletteGame, self).__init__(wheel, table)
 
     def cycle(self, player: "casino.players.Player"):
         """Execute a single cycle of play with a given `Player`.
@@ -1850,7 +1936,7 @@ class RouletteGame:
         if player.playing():
             player.place_bets()
             self.table.validate()
-            winning_bin = self.wheel.choose()
+            winning_bin = self.event_factory.choose()
             player.winners(winning_bin.outcomes)
             for bet in self.table:
                 if bet.outcome in winning_bin:
@@ -1866,13 +1952,6 @@ class RouletteGame:
         Roulette has no state so bets on all `Outcome`s are allowed.
         """
         return True
-
-    def reset(self):
-        """Reset the game back to its starting state.
-
-        This does not apply here as Roulette is stateless.
-        """
-        pass
 
 
 class Simulator:

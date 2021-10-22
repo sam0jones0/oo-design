@@ -31,9 +31,9 @@ class TestWheel:
         assert o1 in random_bin
         assert o2 in random_bin
         assert o3 in random_bin
-        assert o1 in wheel.get_bin(8)
-        assert o2 in wheel.get_bin(8)
-        assert o3 in wheel.get_bin(8)
+        assert o1 in wheel.get_event(8)
+        assert o2 in wheel.get_event(8)
+        assert o3 in wheel.get_event(8)
 
     def test_get(self, wheel_with_outcomes):
         o1, o2, o3 = self.mock_outcomes

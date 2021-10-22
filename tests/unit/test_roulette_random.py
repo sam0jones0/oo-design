@@ -31,8 +31,6 @@ def test_roulette_random(monkeypatch, mock_table, mock_bet, mock_game):
     assert player.stake == 20
     assert player.playing()
 
-
-
     assert str(table.bets[0]) == "1 on Red 1:1"
     assert str(table.bets[1]) == "1 on Dozen 1 6:1"
     assert str(table.bets[2]) == "1 on Red 1:1"
@@ -44,4 +42,3 @@ def test_roulette_random(monkeypatch, mock_table, mock_bet, mock_game):
     player.rounds_to_go = 0
     table.bets = []
     assert not player.playing()
-

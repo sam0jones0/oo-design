@@ -18,11 +18,10 @@ def test_game(seeded_wheel):
     """
     wheel = seeded_wheel
     table = casino.main.Table()
-    table.set_game(casino.main.RouletteGame(table, wheel))
-    table.game.wheel = wheel
+    game = casino.main.RouletteGame(wheel, table)
+    table.set_game(game)
     player = casino.players.RouletteMartingale(table)
     player.reset(20, 100)
-    game = casino.main.RouletteGame(table, wheel)
 
     while player.playing():
         game.cycle(player)
