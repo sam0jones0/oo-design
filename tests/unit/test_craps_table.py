@@ -1,12 +1,9 @@
-"""TODO"""
-
 import pytest
 
 import casino.main
 
 
 def test_craps_table(mock_player):
-    """TODO"""
     table = casino.main.Table()
     game = casino.main.CrapsGame("dice", table)  # type: ignore
     player = mock_player()

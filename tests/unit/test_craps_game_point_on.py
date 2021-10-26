@@ -1,5 +1,3 @@
-"""TODO"""
-
 from fractions import Fraction
 
 import pytest
@@ -9,11 +7,8 @@ import tests.conftest
 
 
 class TestCrapsGamePointOn:
-    """TODO"""
-
     @pytest.fixture(autouse=True)
     def _setup(self, monkeypatch, mock_craps_game, mock_table, mock_throw):
-        """TODO"""
         monkeypatch.setattr(casino.main, "CrapsGame", mock_craps_game)
         monkeypatch.setattr(casino.main, "Table", mock_table)
         monkeypatch.setattr(casino.main, "NaturalThrow", mock_throw)
@@ -30,7 +25,6 @@ class TestCrapsGamePointOn:
         assert self.game == self.table.game
 
     def test_is_valid(self, craps_bet):
-        """TODO"""
         buy_five_bet = craps_bet("Buy 5")
         buy_six_bet = craps_bet("Buy 6")
         lay_five_bet = craps_bet("Lay 5")
@@ -49,7 +43,6 @@ class TestCrapsGamePointOn:
         assert self.state.is_valid(field_bet.outcome)
 
     def test_is_working(self, craps_bet):
-        """TODO"""
         pass_bet = craps_bet("Pass Line")
         come_bet = craps_bet("Come Line")
         prop_two_bet = craps_bet("Proposition 2")
@@ -58,7 +51,6 @@ class TestCrapsGamePointOn:
         assert self.state.is_working(prop_two_bet.outcome)
 
     def test_craps_throw(self, craps_bet):
-        """TODO"""
         dont_come_bet = craps_bet("Don't Come Line")
         come_bet = craps_bet("Come Line")
         come_odds_bet = craps_bet("Come Point 6 Odds")
@@ -83,7 +75,6 @@ class TestCrapsGamePointOn:
         assert isinstance(self.state, casino.main.CrapsGamePointOn)
 
     def test_natural_throw(self, craps_bet):
-        """TODO"""
         dont_pass_bet = craps_bet("Don't Pass Line")
         dont_pass_odds = craps_bet("Don't Pass Odds")
         dont_come_point_bet = craps_bet("Don't Come Point 5")
@@ -117,7 +108,6 @@ class TestCrapsGamePointOn:
         assert len(self.table.bets) == 0
 
     def test_eleven_throw(self, craps_bet):
-        """TODO"""
         dont_come_bet = craps_bet("Don't Come Line")
         come_bet = craps_bet("Come Line")
         come_odds_bet = craps_bet("Come Point 6 Odds")
@@ -142,7 +132,6 @@ class TestCrapsGamePointOn:
         assert isinstance(self.state, casino.main.CrapsGamePointOn)
 
     def test_point_throw_point_made(self, craps_bet):
-        """TODO"""
         pass_bet = craps_bet("Pass Line")
         pass_odds_bet = craps_bet("Pass Odds")
         dont_pass_bet = craps_bet("Don't Pass Line")
@@ -165,7 +154,6 @@ class TestCrapsGamePointOn:
         assert isinstance(self.state, casino.main.CrapsGamePointOff)
 
     def test_point_throw_point_not_made(self, craps_bet):
-        """TODO"""
         pass_bet = craps_bet("Pass Line")
         come_point_bet = craps_bet("Come Point 5")
         come_point_odds_bet = craps_bet("Come Point 5 Odds")
@@ -193,7 +181,6 @@ class TestCrapsGamePointOn:
         assert isinstance(self.state, casino.main.CrapsGamePointOn)
 
     def test_point_throw_come_line_move_to_throw(self, craps_bet):
-        """TODO"""
         pass_bet = craps_bet("Pass Line")
         come_line_bet = craps_bet("Come Line")
         dont_come_line_bet = craps_bet("Don't Come Line")
@@ -211,9 +198,7 @@ class TestCrapsGamePointOn:
         assert isinstance(self.state, casino.main.CrapsGamePointOn)
 
     def test_point_outcome_odds(self):
-        """TODO"""
         assert self.state.point_outcome_odds() == Fraction(6, 5)
 
     def test_str(self):
-        """TODO"""
         assert self.state.__str__() == "The Point Is 6"

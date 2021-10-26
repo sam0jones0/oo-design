@@ -1,5 +1,3 @@
-"""TODO"""
-
 from collections import Counter
 from fractions import Fraction
 

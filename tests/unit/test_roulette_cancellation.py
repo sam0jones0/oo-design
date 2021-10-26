@@ -1,5 +1,3 @@
-"""TODO"""
-
 # noinspection PyUnresolvedReferences
 import pytest
 

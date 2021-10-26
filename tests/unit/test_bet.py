@@ -1,5 +1,3 @@
-"""TODO"""
-
 # noinspection PyUnresolvedReferences
 import pytest
 
@@ -7,7 +5,6 @@ import casino.main
 
 
 def test_bet(mock_player):
-    """TODO"""
     player = mock_player()
     o1 = casino.main.Outcome("foo", 1)
     o2 = casino.main.Outcome("bar", 4)

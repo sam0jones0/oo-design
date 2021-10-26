@@ -1,5 +1,3 @@
-"""TODO"""
-
 import random
 
 import pytest

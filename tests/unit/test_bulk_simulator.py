@@ -1,5 +1,3 @@
-"""TODO"""
-
 from pathlib import Path
 
 # noinspection PyUnresolvedReferences

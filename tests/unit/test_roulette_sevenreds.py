@@ -1,5 +1,3 @@
-"""TODO"""
-
 import pytest
 
 import casino.main

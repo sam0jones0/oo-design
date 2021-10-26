@@ -1,5 +1,3 @@
-"""TODO"""
-
 from fractions import Fraction
 
 # noinspection PyUnresolvedReferences
@@ -9,7 +7,6 @@ import casino.main
 
 
 def test_commission_bet(mock_player):
-    """TODO"""
     player = mock_player()
     o1 = casino.main.Outcome("foo", Fraction(2, 1))
     o2 = casino.main.Outcome("bar", Fraction(2, 3))

@@ -1,7 +1,3 @@
-"""
-TODO
-"""
-
 from __future__ import annotations
 
 import csv
@@ -961,8 +957,6 @@ class ThrowBuilder:
 
     Subclasses can override this to reflect different casino-specific rules for
     odds on Field bets.
-
-    # TODO: Does this really need to be a class?
     """
 
     def __init__(self) -> None:
@@ -1230,7 +1224,7 @@ class Table:
             raise InvalidBet(
                 f"Player does not have enough money to place this bet: {repr(bet)}."
             )
-        if not (0 < self.bets_total + bet.amount <= self.limit):
+        if not 0 < self.bets_total + bet.amount <= self.limit:
             raise casino.main.InvalidBet(
                 "Placing this bet violates table min/limit rules."
             )
@@ -1364,9 +1358,6 @@ class CrapsGame(Game):
         state: An instance of either `CrapsGamePointOff` or `CrapsGamePointOn`
             that determines state change rules and state-specific bet resolution
             and validation.
-
-        # TODO: we defer binding the Player instance and CrapsGame object until
-            we are gathering statistical samples.
     """
 
     state: CrapsGameState

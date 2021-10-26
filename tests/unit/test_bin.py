@@ -1,7 +1,3 @@
-"""
-TODO
-"""
-
 # noinspection PyUnresolvedReferences
 import pytest
 
@@ -9,7 +5,6 @@ import casino.main
 
 
 def test_bin_construction():
-    """TODO"""
     five = casino.main.Outcome("00-0-1-2-3", 6)
 
     zero = casino.main.Bin()

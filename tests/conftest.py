@@ -1,5 +1,3 @@
-"""TODO"""
-
 import random
 from dataclasses import dataclass
 from fractions import Fraction

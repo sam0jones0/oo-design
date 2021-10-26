@@ -1,5 +1,3 @@
-"""TODO"""
-
 from fractions import Fraction
 
 # noinspection PyUnresolvedReferences
